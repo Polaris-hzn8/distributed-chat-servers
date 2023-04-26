@@ -5,6 +5,8 @@
 
 Jason开发库、boost + muduo网络库、redis环境、mysql环境
 
+使用muduo网络库，将网络IO代码与业务代码分离，只需要关注业务代码接口（用户的断开与连接、用户的可读写事件）
+
 1. Json序列化与反序列化
 2. muduo网络库开发
 3. redis缓存服务器编程
