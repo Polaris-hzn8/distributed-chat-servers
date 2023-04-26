@@ -1,3 +1,0 @@
-/home/luochenhao/3.project/2.distributed-chat-server/muduo_example/build/CMakeFiles/rebuild_cache.dir
-/home/luochenhao/3.project/2.distributed-chat-server/muduo_example/build/CMakeFiles/server.dir
-/home/luochenhao/3.project/2.distributed-chat-server/muduo_example/build/CMakeFiles/edit_cache.dir

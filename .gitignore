@@ -54,6 +54,6 @@ Mkfile.old
 dkms.conf
 
 # Folder
-bin/*
-build/*
+bin/
+build/
 
