@@ -1,11 +1,12 @@
 /*************************************************************************
-    > File Name: server.cpp
+    > File Name: chatserver.cpp
     > Author: luochenhao
     > Mail: 3453851623@qq.com
     > Created Time: Sun 30 Apr 2023 14:45:20 CST
 ************************************************************************/
 
-#include "server.h"
+#include "head.h"
+#include "chatserver.h"
 
 /**
  * @brief Construct a new Chat Server:: Chat Server object
@@ -68,6 +69,15 @@ void ChatServer::onConnection(const TcpConnectionPtr &conn) {
  */
 void ChatServer::onMessage(const TcpConnectionPtr &conn, Buffer *buff, Timestamp time) {
     string content = buff->retrieveAllAsString();
+    //1.数据的反序列化string类型转为json类型
+    json js = json::parse(content);
+
+    //2.解耦网络模块与业务模块的代码 OOP解耦模块之间的关系：使用基于面向接口的编程（抽象基类）、基于回调操作
+    //通过js["msg_id"]来 -> 获取业务handler -> conn json time
+
+
+
+
     cout << "recv data: " << content << "time: " << time.toString() << endl;
     conn->send(content);
 }

@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "${default}",
+                "/home/luochenhao/3.project/2.distributed-chat-server/server/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

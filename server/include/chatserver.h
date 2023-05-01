@@ -1,12 +1,12 @@
 /*************************************************************************
-	> File Name: server.h
+	> File Name: chatserver.h
 	> Author: luochenhao
 	> Mail: 3453851623@qq.com
 	> Created Time: Fri 28 Apr 2023 12:11:38 AM CST
  ************************************************************************/
 
-#ifndef _SERVER_H
-#define _SERVER_H
+#ifndef _CHATSERVER_H
+#define _CHATSERVER_H
 
 #include "head.h"
 
