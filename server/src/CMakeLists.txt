@@ -2,7 +2,6 @@
 aux_source_directory(. SRC_LIST)
 aux_source_directory(../thirdparty SRC_LIST)
 
-
 # 2.编译后的可执行文件名
 add_executable(chatserver ${SRC_LIST})
 

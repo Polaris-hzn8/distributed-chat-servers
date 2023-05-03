@@ -5,6 +5,10 @@
 	> Created Time: Sun 30 Apr 2023 04:43:26 PM CST
  ************************************************************************/
 
+/**
+ * chatservice 业务层
+*/
+
 #ifndef _CHATSERVICE_H
 #define _CHATSERVICE_H
 

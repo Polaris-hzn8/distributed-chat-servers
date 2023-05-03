@@ -9,7 +9,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 
 # 3.头文件搜索路径
 include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty)
 
 # 4.指定需要编译搜索的子目录
 add_subdirectory(src)

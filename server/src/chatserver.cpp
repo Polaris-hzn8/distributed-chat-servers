@@ -5,11 +5,16 @@
     > Created Time: Sun 30 Apr 2023 14:45:20 CST
 ************************************************************************/
 
+/**
+ * chatserver 网络层
+*/
+
 #include "head.h"
 #include "chatserver.h"
+#include "chatservice.h"
 
 /**
- * @brief Construct a new Chat Server:: Chat Server object
+ * @brief Chat Server的构造函数
  * 
  * @param loop 事件循环 epoll
  * @param listenAddr IP + Port
@@ -30,8 +35,8 @@ ChatServer::ChatServer(EventLoop *loop, const InetAddress &listenAddr, const str
 }
 
 /**
- * @brief Construct a new Chat Server::start object
- * 开启事件循环
+ * @brief 开启事件循环
+ * 
  */
 void ChatServer::start() {
     _server.start();
@@ -72,13 +77,10 @@ void ChatServer::onMessage(const TcpConnectionPtr &conn, Buffer *buff, Timestamp
     //1.数据的反序列化string类型转为json类型
     json js = json::parse(content);
 
-    //2.解耦网络模块与业务模块的代码 OOP解耦模块之间的关系：使用基于面向接口的编程（抽象基类）、基于回调操作
+    //2.解耦网络模块与业务模块的代码 OOP解耦模块之间的关系两种方式：使用基于面向接口的编程（抽象基类）、基于回调操作
     //通过js["msg_id"]来 -> 获取业务handler -> conn json time
-
-
-
-
-    cout << "recv data: " << content << "time: " << time.toString() << endl;
-    conn->send(content);
+    auto msgHandler = ChatService::instance()->getHandler(js["msg_id"].get<int>());
+    //回调消息绑定好的事件处理器 来执行相应的业务处理
+    msgHandler(conn, js, time);
 }
 

@@ -6,7 +6,7 @@
 ************************************************************************/
 
 #include "head.h"
-#include "server.h"
+#include "chatserver.h"
 
 int main() {
     EventLoop loop;//epoll
