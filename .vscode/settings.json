@@ -55,5 +55,5 @@
         "ctime": "cpp",
         "iomanip": "cpp"
     },
-    "cmake.sourceDirectory": "/home/luochenhao/3.project/2.distributed-chat-server/server",
+    "cmake.sourceDirectory": "/home/luochenhao/3.project/2.distributed-chat-server",
 }

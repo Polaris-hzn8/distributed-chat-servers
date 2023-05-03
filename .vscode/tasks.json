@@ -12,9 +12,7 @@
 				"-o",
 				"${fileDirname}/${fileBasenameNoExtension}",
 				"-I",
-				"${fileDirname}",
-				"-I",
-				"/home/luochenhao/3.project/2.distributed-chat-server/server/include"
+				"${fileDirname}"
 			],
 			"options": {
 				"cwd": "${fileDirname}"

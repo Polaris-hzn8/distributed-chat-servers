@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${default}",
-                "/home/luochenhao/3.project/2.distributed-chat-server/server/include"
+                "/home/luochenhao/3.project/2.distributed-chat-server/"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",
