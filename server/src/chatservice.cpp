@@ -9,8 +9,8 @@
  * chatservice 业务层
 */
 
-#include "chatservice.h"
 #include "common.h"
+#include "chatservice.h"
 
 //获取单例对象的接口函数
 ChatService* ChatService::instance() {
@@ -18,7 +18,7 @@ ChatService* ChatService::instance() {
     return &service;
 }
 
-//注册消息id 以及对应的Handler回调操作
+//将消息id 以及对应的Handler回调操作 初始化写入_msgHandlerMap中
 ChatService::ChatService() {
     //unordered_map<int, MsgHandler> _msgHandlerMap;//存储消息id 及其对应的事件处理方法表
     //相应的消息id 及其 与对应的事件回调处理函数 做一个绑定
@@ -41,23 +41,42 @@ MsgHandler ChatService::getHandler(int msg_id) {
     }
 }
 
+/*
+    ORM框架：Object Relation Map 对象关系映射
+    业务层操作的都是对象, 在数据层 DAO 封装了所有数据的相应操作
+*/
+
+//处理注册业务 name passwd
+void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do regis service!";
+    string name = js["username"];
+    string passwd = js["passwd"];
+
+    User user;
+    user.setName(name);
+    user.setName(passwd);
+    
+    bool flag = _userModel.insert(user);
+    if (flag) {
+        //注册成功 向客户端返回json response应答
+        json response;
+        response["errno"] = 0;
+        response["msg_id"] = REG_MSG_ACK;
+        response["user_id"] = user.getId();
+        conn->send(response.dump());
+    } else {
+        //注册失败
+        json response;
+        response["errno"] = 1;
+        response["msg_id"] = REG_MSG_ACK;
+        conn->send(response.dump());
+    }
+}
+
 //处理登录业务
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     LOG_INFO << "do login service!";
 }
-
-//处理注册业务
-void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    LOG_INFO << "do regis service!";
-}
-
-
-
-
-
-
-
-
 
 
 

@@ -9,8 +9,9 @@
 #define _COMMON_H
 
 enum EnMsgType {
-	LOGIN_MSG = 1, //登录消息 1
-	REG_MSG //注册消息 2
+	LOGIN_MSG = 1, //登录消息
+	REG_MSG, //注册消息
+	REG_MSG_ACK //注册响应消息
 };
 
 //chatservice方法实现：主要就是将消息id 以及对应的绑定写到map表中

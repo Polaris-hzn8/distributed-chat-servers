@@ -15,6 +15,7 @@
 #include <functional>
 #include <unordered_map>
 #include <string>
+#include <memory>
 #include "json.hpp"
 
 using namespace std;
