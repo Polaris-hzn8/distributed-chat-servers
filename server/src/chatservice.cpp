@@ -48,13 +48,15 @@ MsgHandler ChatService::getHandler(int msg_id) {
 
 //处理注册业务 name passwd
 void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    // {"msg_id":2,"name":"luochenhao","password":"123456"}
+    // {"msg_id":2,"name":"lch","password":"123456"}
     LOG_INFO << "do regis service!";
-    string name = js["username"];
-    string passwd = js["passwd"];
+    string name = js["name"];
+    string password = js["password"];
 
     User user;
     user.setName(name);
-    user.setName(passwd);
+    user.setPasswd(password);
     
     bool flag = _userModel.insert(user);
     if (flag) {
@@ -76,6 +78,9 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
 //处理登录业务
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     LOG_INFO << "do login service!";
+    
+
+
 }
 
 
