@@ -28,7 +28,7 @@ ChatService::ChatService() {
 }
 
 //获取消息id对应的事件处理器
-MsgHandler ChatService::getHandler(int msg_id) { 
+MsgHandler ChatService::getHandler(int msg_id) {
     auto it = _msgHandlerMap.find(msg_id);
     //没有查询到结果 进行日志打印 或者直接返回一个空操作的事件处理器
     if (it == _msgHandlerMap.end()) {
@@ -50,14 +50,17 @@ MsgHandler ChatService::getHandler(int msg_id) {
 void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     // {"msg_id":2,"name":"luochenhao","password":"123456"}
     // {"msg_id":2,"name":"lch","password":"123456"}
+
+    //1.从Json中获取客户端发来的信息
     LOG_INFO << "do regis service!";
     string name = js["name"];
     string password = js["password"];
 
     User user;
     user.setName(name);
-    user.setPasswd(password);
+    user.setPassword(password);
     
+    //2.将数据插入至服务器的数据库
     bool flag = _userModel.insert(user);
     if (flag) {
         //注册成功 向客户端返回json response应答
@@ -77,12 +80,50 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
 
 //处理登录业务
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    LOG_INFO << "do login service!";
+    // {"msg_id":1,"id":28,"password":"123456"}
     
+    //1.从Json中获取客户端发来的信息
+    LOG_INFO << "do login service!";
+    int id = js["id"].get<int>();
+    string password = js["password"];
 
-
+    //2.用户登录验证
+    User user = _userModel.query(id);
+    if (user.getId() == -1) {
+        //2-1 用户名不存在
+        json response;
+        response["msg_id"] = LOGIN_MSG_ACK;
+        response["errno"] = 1;
+        response["errmsg"] = "account not exist";
+        conn->send(response.dump());
+    } else if (user.getPassword() != password) {
+        //2-2 用户名对应的密码错误
+        json response;
+        response["msg_id"] = LOGIN_MSG_ACK;
+        response["errno"] = 1;
+        response["errmsg"] = "account password error";
+        conn->send(response.dump());
+    } else if (user.getState() == "online") {
+        //2-3 用户已经登录 不允许重复登录
+        json response;
+        response["msg_id"] = LOGIN_MSG_ACK;
+        response["errno"] = 2;
+        response["errmsg"] = "account already login";
+        conn->send(response.dump());
+    } else {
+        //2-4 登录成功
+        //（1）需要更新用户状态信息
+        user.setState("online");
+        _userModel.updateState(user);
+        //（2）返回响应消息
+        json response;
+        response["msg_id"] = LOGIN_MSG_ACK;
+        response["errno"] = 0;
+        response["id"] = user.getId();
+        response["name"] = user.getName();
+        conn->send(response.dump());
+    }
 }
-
 
 
 

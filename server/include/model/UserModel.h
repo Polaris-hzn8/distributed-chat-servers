@@ -12,9 +12,13 @@
 
 class UserModel {
 public:
+    //User表插入操作
     bool insert(User &user);
+    //根据id查询对应的User数据
+    User query(int id);
+    //更新用户状态
+    bool updateState(User user);
 };
-
 
 
 #endif // !_USERMODEL_H

@@ -22,12 +22,12 @@ public:
 
     void setId(int id) { this->id = id; }
     void setName(string name) { this->name = name; }
-    void setPasswd(string password) { this->password = password; }
+    void setPassword(string password) { this->password = password; }
     void setState(string state) { this->state = state; }
 
     int getId() { return this->id; }
     string getName() { return this->name; }
-    string getPasswd() { return this->password; }
+    string getPassword() { return this->password; }
     string getState() { return this->state; }
 
 private:
