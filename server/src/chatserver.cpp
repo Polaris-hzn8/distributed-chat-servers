@@ -55,12 +55,13 @@ void ChatServer::onConnection(const TcpConnectionPtr &conn) {
                 << conn->localAddress().toIpPort() 
                 << " state:online" << endl;
     } else {
+        ChatService::instance()->clientCloseUnexpectedly(conn);
         cout << conn->peerAddress().toIpPort() 
                 << "->" 
                 << conn->localAddress().toIpPort() 
                 << " state:offline" << endl;
         conn->shutdown();//close(fd);
-        _loop->quit();//退出epoll服务器结束
+        //_loop->quit();//退出epoll服务器结束
     }
 }
 

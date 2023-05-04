@@ -78,7 +78,7 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
     }
 }
 
-//处理登录业务
+//处理登录业务 id password
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     // {"msg_id":1,"id":28,"password":"123456"}
     
@@ -132,5 +132,28 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
     }
 }
 
+
+//处理客户端异常退出
+void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
+    User user;
+    //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
+    //利用大括号 降低锁的粒度
+    {
+        lock_guard<mutex> lock(_connMutex);
+        for (auto it = _userConnMap.begin(); it != _userConnMap.end(); ++it) {
+            if (it->second == conn) {
+                user.setId(it->first);//记录出现异常的客户端连接id
+                _userConnMap.erase(it);//将连接信息conn从_userConnMap中删除
+                break;
+            }
+        }
+    }
+
+    //2.需要更新用户状态信息
+    if (user.getId() != -1) {
+        user.setState("offline");
+        _userModel.updateState(user);
+    }
+}
 
 

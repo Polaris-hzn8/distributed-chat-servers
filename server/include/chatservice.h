@@ -34,6 +34,8 @@ public:
 	void login(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//4.处理注册业务
 	void regis(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//5.处理客户端异常退出
+	void clientCloseUnexpectedly(const TcpConnectionPtr &conn);
 private:
 	//单例模式
 	ChatService();
