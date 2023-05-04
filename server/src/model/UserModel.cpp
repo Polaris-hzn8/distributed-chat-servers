@@ -5,9 +5,9 @@
     > Created Time: Wed 03 May 2023 12:14:49 CST
 ************************************************************************/
 
+#include "db.h"
 #include "head.h"
 #include "UserModel.h"
-#include "db.h"
 
 bool UserModel::insert(User &user) {
     //1.组装sql语句

@@ -14,7 +14,7 @@
 
 #include "head.h"
 #include "UserModel.h"
-#include <mutex>
+#include "OffMessageModel.h"
 
 //采用单例模式
 //将消息id msg_id 与事件TcpConnectionPtr &conn 进行绑定
@@ -55,6 +55,7 @@ private:
 
 	//数据操作类对象
 	UserModel _userModel;
+	OffMessageModel _offMessageModel;
 };
 
 #endif

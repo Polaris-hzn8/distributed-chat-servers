@@ -10,7 +10,7 @@
 
 #include "head.h"
 
-// User表的ORM类
+// user表的ORM类
 class User {
 public:
     User(int id = -1, string name = "", string password = "", string state = "offline") {

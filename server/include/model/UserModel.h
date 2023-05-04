@@ -8,7 +8,7 @@
 #ifndef _USERMODEL_H
 #define _USERMODEL_H
 
-#include "user.h"
+#include "User.h"
 
 class UserModel {
 public:

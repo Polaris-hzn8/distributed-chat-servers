@@ -10,7 +10,9 @@
 */
 
 #include "common.h"
+#include "json.hpp"
 #include "chatservice.h"
+
 
 //获取单例对象的接口函数
 ChatService* ChatService::instance() {
@@ -120,15 +122,24 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             lock_guard<mutex> lock(_connMutex);
             _userConnMap.insert({id, conn});
         }
+
         //（2）需要更新用户状态信息
         user.setState("online");
         _userModel.updateState(user);
+
         //（3）返回响应消息
         json response;
         response["msg_id"] = LOGIN_MSG_ACK;
         response["errno"] = 0;
         response["id"] = user.getId();
         response["name"] = user.getName();
+
+        //（4）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
+        vector<string> messages = _offMessageModel.query(id);
+        if (!messages.empty()) {
+            response["offlinemssage"] = messages;//json直接支持容器序列化与反序列化
+            _offMessageModel.remove(id);//读取该用户的离线消息后 将该用户的所有离线消息删除
+        }
         conn->send(response.dump());
     }
 }
@@ -161,7 +172,9 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
 void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     //lch登录 {"msg_id":1,"id":28,"password":"123456"}
     //zhangsan登录 {"msg_id":1,"id":13,"password":"123456"}
-    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "name":"zhangsan", "to":28, "content":"today is a good day"}
+    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "name":"zhangsan", "to":28, "message":"today is a good day"}
+    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "name":"zhangsan", "to":28, "message":"i want to go out for a walk."}
+    
     int to = js["to"].get<int>();
     {   
         //1.临界资源上锁
@@ -183,10 +196,8 @@ void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp t
         }
     }
     
-    //4.单聊目标不在线 存储离线消息
-
-
-
+    //4.单聊目标不在线 直接存储离线消息
+    _offMessageModel.insert(to, js.dump());
 }
 
 
