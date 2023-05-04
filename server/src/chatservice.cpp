@@ -22,9 +22,10 @@ ChatService* ChatService::instance() {
 ChatService::ChatService() {
     //unordered_map<int, MsgHandler> _msgHandlerMap;//存储消息id 及其对应的事件处理方法表
     //相应的消息id 及其 与对应的事件回调处理函数 做一个绑定
-    _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });
-    _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });
-
+    _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
+    _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
+    _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::singleChat, this, _1, _2, _3) });//单聊
+    _msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//群聊
 }
 
 //获取消息id对应的事件处理器
@@ -156,4 +157,40 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
     }
 }
 
+
+void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    //lch登录 {"msg_id":1,"id":28,"password":"123456"}
+    //zhangsan登录 {"msg_id":1,"id":13,"password":"123456"}
+    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "name":"zhangsan", "to":28, "content":"today is a good day"}
+    int to = js["to"].get<int>();
+    {   
+        //1.临界资源上锁
+        lock_guard<mutex> lock(_connMutex);
+
+        //2.目标用户是否在线查询
+        auto it = _userConnMap.find(to);
+        /* 
+            用户在线是进行消息转发需要放入 临界区加锁的原因：
+            如果用户在线需要 使用在线用户的conn 在使用conn的时候有可能会在其他地方被删除（加入临界区保证conn不能被删除）
+         */
+
+        //3.目标用户在线进行消息发送 
+        if (it != _userConnMap.end()) {
+            //单聊目标在线 服务器直接转发消息给to用户
+            TcpConnectionPtr tcpconnptr = it->second;
+            tcpconnptr->send(js.dump());
+            return;
+        }
+    }
+    
+    //4.单聊目标不在线 存储离线消息
+
+
+
+}
+
+
+void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    
+}
 

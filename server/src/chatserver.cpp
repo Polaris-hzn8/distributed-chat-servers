@@ -22,16 +22,16 @@
  */
 ChatServer::ChatServer(EventLoop *loop, const InetAddress &listenAddr, const string &nameArg)
     :_server(loop, listenAddr, nameArg), _loop(loop) {
-    //1.给服务器注册 用户连接的创建与断开 进行回调（注册连接回调）
+    //1.设置服务器端的线程数量 1个IO线程 3个worker线程
+    _server.setThreadNum(4);
+    
+    //2.给服务器注册 用户连接的创建与断开 进行回调（注册连接回调）
     /* 将成员函数myConnection地址 与 this指针指向的对象绑定 转化为一个仿函数并存储到对象 f 中  */
     /* function<void(const TcpConnectionPtr&)> f =  = bind(&ChatServer::myConnection, this, placeholders::_1); */
     _server.setConnectionCallback(std::bind(&ChatServer::onConnection, this, _1));
     
-    //2.给服务器注册 用户读写事件 进行回调（注册消息回调）
+    //3.给服务器注册 用户读写事件 进行回调（注册消息回调）
     _server.setMessageCallback(std::bind(&ChatServer::onMessage, this, _1, _2, _3));
-
-    //3.设置服务器端的线程数量 1个IO线程 3个worker线程
-    _server.setThreadNum(4);
 }
 
 /**
