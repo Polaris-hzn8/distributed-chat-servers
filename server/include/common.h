@@ -15,6 +15,6 @@ enum EnMsgType {
 	LOGIN_MSG_ACK
 };
 
-//chatservice方法实现：主要就是将消息id 以及对应的绑定写到map表中
+
 
 #endif

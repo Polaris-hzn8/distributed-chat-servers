@@ -112,10 +112,17 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         conn->send(response.dump());
     } else {
         //2-4 登录成功
-        //（1）需要更新用户状态信息
+        //（1）登录成功 记录用户的连接信息
+        // map会被多个线程调用 需要考虑线程安全问题
+        // 锁的粒度一定要小 否则多线程变成一个串行的线程 没有体现并发程序的优势
+        {
+            lock_guard<mutex> lock(_connMutex);
+            _userConnMap.insert({id, conn});
+        }
+        //（2）需要更新用户状态信息
         user.setState("online");
         _userModel.updateState(user);
-        //（2）返回响应消息
+        //（3）返回响应消息
         json response;
         response["msg_id"] = LOGIN_MSG_ACK;
         response["errno"] = 0;
