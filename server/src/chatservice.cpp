@@ -168,6 +168,12 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
     }
 }
 
+//处理服务器异常退出
+void ChatService::reset() {
+    //在服务器退出后 将所有online状态的用户设置为offline
+    _userModel.resetState();
+}
+
 
 void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     //lch登录 {"msg_id":1,"id":28,"password":"123456"}

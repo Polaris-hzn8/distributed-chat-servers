@@ -18,6 +18,7 @@
 #include <vector>
 #include <memory>
 #include <mutex>
+#include <signal.h>
 #include "json.hpp"
 
 using namespace std;

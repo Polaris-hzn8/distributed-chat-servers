@@ -7,8 +7,17 @@
 
 #include "head.h"
 #include "chatserver.h"
+#include "chatservice.h"
+
+//处理服务器ctrl+c退出后 重置user的状态信息
+void resetHandler(int) {
+    ChatService::instance()->reset();
+    exit(0);
+}
 
 int main() {
+    signal(SIGINT, resetHandler);
+
     EventLoop loop;//epoll
     InetAddress add("192.168.172.133", 20000);
     ChatServer server(&loop, add, "myChatServer");//创建Server对象

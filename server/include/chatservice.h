@@ -36,11 +36,14 @@ public:
 	void regis(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//5.处理客户端异常退出
 	void clientCloseUnexpectedly(const TcpConnectionPtr &conn);
+	//6.处理服务端异常退出
+	void reset();
 
-	//6.一对一聊天
+	//7.一对一聊天
 	void singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//7.群聊
+	//8.群聊
 	void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
+
 	
 private:
 	//单例模式

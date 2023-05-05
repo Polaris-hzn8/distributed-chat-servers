@@ -67,7 +67,18 @@ bool UserModel::updateState(User user) {
     return false;
 }
 
-
+bool UserModel::resetState() {
+    //1.组装sql语句
+    char sql[1024] = {0};
+    sprintf(sql, "update user set state = 'offline' where state = 'online';");
+    
+    //2.数据更新
+    Mysql mysql;
+    if (mysql.connect()) {
+        if (mysql.update(sql)) return true;
+    }
+    return false;
+}
 
 
 
