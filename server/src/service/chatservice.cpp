@@ -233,4 +233,13 @@ void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp ti
 }
 
 
+//创建群组
+void createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+
+//加入群组
+void joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+
+//进行群消息聊天
+void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
+
 
