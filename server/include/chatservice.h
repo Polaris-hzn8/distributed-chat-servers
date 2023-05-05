@@ -15,6 +15,7 @@
 #include "head.h"
 #include "UserModel.h"
 #include "OffMessageModel.h"
+#include "FriendModel.h"
 
 //采用单例模式
 //将消息id msg_id 与事件TcpConnectionPtr &conn 进行绑定
@@ -39,12 +40,25 @@ public:
 	//6.处理服务端异常退出
 	void reset();
 
-	//7.一对一聊天
+	//7.单聊
 	void singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//8.群聊
+	//8.添加好友
+	void addFriend(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//9.删除好友
+	void deleteFriend(const TcpConnectionPtr &conn, json &js, Timestamp time);
+
+
+	//11.创建群组
+	void createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//12.解散群组
+	void dismissGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//13.加入群组
+	void joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//14.退出群组
+	void quitGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//10.群聊
 	void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
 
-	
 private:
 	//单例模式
 	ChatService();
@@ -59,6 +73,7 @@ private:
 	//数据操作类对象
 	UserModel _userModel;
 	OffMessageModel _offMessageModel;
+	FriendModel _friendModel;
 };
 
 #endif

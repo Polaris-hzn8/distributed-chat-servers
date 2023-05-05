@@ -9,9 +9,9 @@ add_executable(myServer ${SRC_LIST} ${DB_LIST} ${MODEL_LIST})
 # 3.需要包含的头文件
 include_directories(${PROJECT_SOURCE_DIR}/server/include)
 include_directories(${PROJECT_SOURCE_DIR}/server/include/db)
-include_directories(${PROJECT_SOURCE_DIR}/server/include/pro)
+include_directories(${PROJECT_SOURCE_DIR}/server/include/domain)
 include_directories(${PROJECT_SOURCE_DIR}/server/include/model)
-include_directories(${PROJECT_SOURCE_DIR}/server/include/thirdparty)
+include_directories(${PROJECT_SOURCE_DIR}/server/include/utils)
 
 # 4.需要链接的库
 target_link_libraries(myServer muduo_net muduo_base mysqlclient pthread)

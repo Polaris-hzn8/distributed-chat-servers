@@ -27,7 +27,9 @@ ChatService::ChatService() {
     _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
     _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
     _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::singleChat, this, _1, _2, _3) });//单聊
-    _msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//群聊
+    _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
+    
+    //_msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//群聊
 }
 
 //获取消息id对应的事件处理器
@@ -140,6 +142,21 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             response["offlinemssage"] = messages;//json直接支持容器序列化与反序列化
             _offMessageModel.remove(id);//读取该用户的离线消息后 将该用户的所有离线消息删除
         }
+
+        //（5）查询该用户的好友列表并返回
+        vector<User> friends = _friendModel.query(id);
+        if (!friends.empty()) {
+            vector<string> friends_t;
+            for (User user : friends) {
+                json js;
+                js["id"] = user.getId();
+                js["name"] = user.getName();
+                js["state"] = user.getState();
+                friends_t.push_back(js.dump());
+            }
+            response["friends"] = friends_t;
+        }
+
         conn->send(response.dump());
     }
 }
@@ -174,7 +191,7 @@ void ChatService::reset() {
     _userModel.resetState();
 }
 
-
+//单聊
 void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     //lch登录 {"msg_id":1,"id":28,"password":"123456"}
     //zhangsan登录 {"msg_id":1,"id":13,"password":"123456"}
@@ -207,7 +224,13 @@ void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp t
 }
 
 
-void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    
+//添加好友
+void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    //zhangsan给lch发送添加好友的消息 {"msg_id":6, "uid":13, "fid":28}
+    int uid = js["uid"].get<int>();
+    int fid = js["fid"].get<int>();
+    _friendModel.insert(uid, fid);    
 }
+
+
 
