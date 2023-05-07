@@ -15,15 +15,24 @@ class Group {
 public:
     Group(int id = -1, string name = "", string desc = "") {
         this->id = id;
-        this->name = name;
-        
+        this->groupname = name;
+        this->groupdesc = desc;
     }
+
+    void setId(int groupid) { this->id = groupid; }
+    void setName(string groupname) { this->groupname = groupname; }
+    void setDesc(string groupdesc) { this->groupdesc = groupdesc; }
+    
+    int getId() { return this->id; }
+    string getName() { return this->groupname; }
+    string getDesc() { return this->groupdesc; }
+    vector<GroupUser> &getGroupUsers() { return this->groupusers;}
 
 private:
     int id;
     string groupname;
     string groupdesc;
-    vector<GroupUser> users;//存储群成员信息
+    vector<GroupUser> groupusers;//存储群成员信息
 };
 
 
