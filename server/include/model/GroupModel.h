@@ -15,7 +15,7 @@ public:
     //创建群组
     bool createGroup(Group &group);
     //加入群组
-    bool addGroup(int userid, int groupid, string grouprole);
+    bool joinGroup(int userid, int groupid, string grouprole);
     //查询用户所在群组信息
     vector<Group> queryGroups(int userid);
     //根据gid查询群组用户列表 主要用于群聊消息

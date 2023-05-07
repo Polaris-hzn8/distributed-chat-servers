@@ -16,6 +16,7 @@
 #include "UserModel.h"
 #include "OffMessageModel.h"
 #include "FriendModel.h"
+#include "GroupModel.h"
 
 //采用单例模式
 //将消息id msg_id 与事件TcpConnectionPtr &conn 进行绑定
@@ -74,6 +75,7 @@ private:
 	UserModel _userModel;
 	OffMessageModel _offMessageModel;
 	FriendModel _friendModel;
+	GroupModel _groupModel;
 };
 
 #endif

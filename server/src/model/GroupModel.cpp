@@ -27,7 +27,7 @@ bool GroupModel::createGroup(Group &group) {
 }
 
 //加入群组
-bool GroupModel::addGroup(int userid, int groupid, string grouprole) {
+bool GroupModel::joinGroup(int userid, int groupid, string grouprole) {
     //1.组装sql语句
     char sql[1024] = {0};
     sprintf(sql, "insert into groupuser values('%d', '%d', '%s')", groupid, userid, grouprole.c_str());

@@ -143,7 +143,7 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             _offMessageModel.remove(id);//读取该用户的离线消息后 将该用户的所有离线消息删除
         }
 
-        //（5）查询该用户的好友列表并返回
+        //（5）查询该用户的好友列表 并封装成json格式 进行返回
         vector<User> friends = _friendModel.query(id);
         if (!friends.empty()) {
             vector<string> friends_t;
@@ -156,6 +156,34 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             }
             response["friends"] = friends_t;
         }
+
+        //（6）查询登录用户的群组列表 并封装成json格式 进行返回
+        vector<Group> groups = _groupModel.queryGroups(id);
+        if (!groups.empty()) {
+            //封装群组信息
+            vector<string> groups_t;
+            for (Group group : groups) {
+                json groupjs;
+                groupjs["id"] = group.getId();
+                groupjs["groupname"] = group.getName();
+                groupjs["groupdesc"] = group.getDesc();
+                //封装群组信息中的 群组成员信息
+                vector<GroupUser> groupusers = group.getGroupUsers();
+                vector<string> groupusers_t;
+                for (GroupUser groupuser : groupusers) {
+                    json groupuserjs;
+                    groupuserjs["id"] = groupuser.getId();
+                    groupuserjs["name"] = groupuser.getName();
+                    groupuserjs["state"] = groupuser.getState();
+                    groupuserjs["grouprole"] = groupuser.getRole();
+                    groupusers_t.push_back(groupuserjs.dump());
+                }
+                groupjs["groupusers"] = groupusers_t;
+                groups_t.push_back(groupjs.dump());
+            }
+            response["groups"] = groups_t;
+        }
+
 
         conn->send(response.dump());
     }
@@ -234,12 +262,47 @@ void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp ti
 
 
 //创建群组
-void createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+void ChatService::createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    int userid = js["uid"].get<int>();
+    string groupname = js["groupname"];
+    string groupdesc = js["groupdesc"];
+
+    //存储新创建的群组信息
+    Group group(-1, groupname, groupdesc);
+    if (_groupModel.createGroup(group)) {
+        //存储群成员信息
+        _groupModel.joinGroup(userid, group.getId(), "creator");
+    }
+}
 
 //加入群组
-void joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
+void ChatService::joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    int userid = js["uid"].get<int>();
+    int groupid = js["gid"].get<int>();
+    _groupModel.joinGroup(userid, groupid, "normal");
+}
 
 //进行群消息聊天
-void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
+void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    // {"uid":xx, "gid":xx, "msg":"xxxx"}
+    //1.获取js数据
+    int userid = js["uid"].get<int>();
+    int groupid = js["gid"].get<int>();
+    
+    //2.根据群用户不同在线状态 进行发送群消息 or 存储离线消息
+    vector<int> ids = _groupModel.queryGroupUsers(userid, groupid);
+    /* c++中的map不是线程安全的map */
+        lock_guard<mutex> lock(_connMutex);
+    for (int id : ids) {
+        auto it  = _userConnMap.find(id);
+        if (it != _userConnMap.end()) {
+            //用户处于在线状态
+            it->second->send(js.dump());
+        } else {
+            //用户处于离线状态
+            _offMessageModel.insert(id, js.dump());
+        }
+    }
+}
 
 
