@@ -9,6 +9,26 @@
 #include "head.h"
 #include "UserModel.h"
 
+bool UserModel::isUnique(string username) {
+    //1.组装sql语句
+    char sql[1024] = {0};
+    sprintf(sql, "select count(*) from user where name = '%s'", username.c_str());
+
+    //2.数据查询
+    Mysql mysql;
+    if (mysql.connect()) {
+        MYSQL_RES *res = mysql.query(sql);
+        if (res != nullptr) {
+            MYSQL_ROW row = mysql_fetch_row(res);
+            if (row != nullptr) {
+                int count = stoi(row[0]);
+                if (count) return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool UserModel::insert(User &user) {
     //1.组装sql语句
     char sql[1024] = {0};
@@ -34,7 +54,7 @@ User UserModel::query(int uid) {
     char sql[1024] = {0};
     sprintf(sql, "select * from user where id = %d", uid);
     
-    //2.数据插入
+    //2.数据查询
     Mysql mysql;
     if (mysql.connect()) {
         MYSQL_RES *res = mysql.query(sql);
@@ -46,10 +66,10 @@ User UserModel::query(int uid) {
                 user.setName(row[1]);
                 user.setPassword(row[2]);
                 user.setState(row[3]);
-                mysql_free_result(res);
                 return user;
             }
         }
+        mysql_free_result(res);
     }
     return User();
 }

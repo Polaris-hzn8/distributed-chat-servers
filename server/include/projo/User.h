@@ -20,8 +20,8 @@ public:
         this->state = state;
     }
 
-    void setId(int id) { this->uid = uid; }
-    void setName(string name) { this->username = username; }
+    void setId(int uid) { this->uid = uid; }
+    void setName(string username) { this->username = username; }
     void setPassword(string password) { this->password = password; }
     void setState(string state) { this->state = state; }
 

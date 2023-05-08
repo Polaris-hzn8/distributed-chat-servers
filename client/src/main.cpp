@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
                 int uid = 0;
                 char password[50] = {0};
                 cout << "uid:"; cin >> uid; cin.get();
-                cout << "passwored: "; cin.getline(password, 50);
+                cout << "password:"; cin.getline(password, 50);
 
                 /* 组装json数据 */
                 json js;
@@ -107,10 +107,13 @@ int main(int argc, char *argv[]) {
                         json response = json::parse(buff);
                         if (response["errno"].get<int>() != 0) {
                             /* 登录信息有误 打印服务器返回的异常信息 */
-                            cerr << response["errmsg"] << endl;
+                            string errmsg = response["errmsg"]; 
+                            cerr << errmsg << endl;
                         } else {
                             /* 登录成功 初始化本地数据 */
                             /* 记录登录用户的uid与username */
+                            string sysmsg = response["sysmsg"];
+                            cout << sysmsg << endl;
                             userInfo_g.setId(response["uid"].get<int>());
                             userInfo_g.setName(response["username"]);
 
@@ -155,7 +158,7 @@ int main(int argc, char *argv[]) {
                             }
 
                             /* 显示当前登录用户的基本信息 */
-                            cout << userInfo_g.getName() << " login success, userid is " << userInfo_g.getId() << " ." << endl;
+                            cout << userInfo_g.getName() << " login success, userid is " << userInfo_g.getId() << "." << endl;
                             showUserInfo();
 
                             /* 显示当前用户的离线消息（私聊离线信息 & 群组离线消息） */
@@ -181,6 +184,8 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
+
+                break;
             }
 
             case 2: {
@@ -209,12 +214,17 @@ int main(int argc, char *argv[]) {
                     else {
                         json response = json::parse(buff);
                         if (response["errno"].get<int>() != 0) {
-                            cerr << username << " is already exist, please change your username!~" << request << endl;
+                            string errmsg = response["errmsg"];
+                            cerr << errmsg << endl;
                         } else {
+                            string errmsg = response["sysmsg"];
+                            cerr << errmsg << endl;
                             cout << username << " register success, userid is " << response["uid"] << ", don't forget it!" << endl;
                         }
                     }
                 }
+
+                break;
             }
 
             case 3: {

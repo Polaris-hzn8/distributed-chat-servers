@@ -12,6 +12,8 @@
 
 class UserModel {
 public:
+    //向User表中插入的username是否唯一
+    bool isUnique(string username);
     //User表插入操作
     bool insert(User &user);
     //根据id查询对应的User数据

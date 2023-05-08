@@ -58,6 +58,7 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
 
     //1.从Json中获取客户端发来的信息
     LOG_INFO << "do regis service!";
+    cout << js << endl;
     string username = js["username"];
     string password = js["password"];
 
@@ -65,76 +66,82 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
     user.setName(username);
     user.setPassword(password);
     
+    json response;
+    response["msgId"] = REG_MSG_ACK;
+
     //2.将数据插入至服务器的数据库
-    bool flag = _userModel.insert(user);
-    if (flag) {
-        //注册成功 向客户端返回json response应答
-        json response;
-        response["errno"] = 0;
-        response["msgId"] = REG_MSG_ACK;
-        response["uid"] = user.getId();
-        conn->send(response.dump());
-    } else {
-        //注册失败
-        json response;
+    bool isUnique = _userModel.isUnique(username);
+    if (!isUnique) {
+        //注册用户名重复
         response["errno"] = 1;
-        response["msgId"] = REG_MSG_ACK;
-        conn->send(response.dump());
+        response["errmsg"] = "username already exist!~";
+    } else {
+        //username唯一可以进行注册操作
+        if (!_userModel.insert(user)) {
+            //数据库插入数据失败
+            response["errno"] = 1;
+            response["errmsg"] = "data insert failed, netword error!~";
+        } else {
+            //数据库插入数据成功
+            response["errno"] = 0;
+            response["sysmsg"] = username + " register success!";
+            response["uid"] = user.getId();
+        }
     }
+    conn->send(response.dump());
 }
 
 //处理登录业务 id password
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    // {"msg_id":1,"id":28,"password":"123456"}
+    // {"msgId":1,"uid":28,"password":"123456"}
     
     //1.从Json中获取客户端发来的信息
     LOG_INFO << "do login service!";
+    cout << js << endl;
     int uid = js["uid"].get<int>();
     string password = js["password"];
 
+    json response;
+    response["msgId"] = LOGIN_MSG_ACK;
+
     //2.用户登录验证
     User user = _userModel.query(uid);
+    cout << user.getId() << endl;
+    cout << user.getPassword() << endl;
+
     if (user.getId() == -1) {
         //2-1 用户名不存在
-        json response;
-        response["msgId"] = LOGIN_MSG_ACK;
         response["errno"] = 1;
         response["errmsg"] = "account not exist";
-        conn->send(response.dump());
     } else if (user.getPassword() != password) {
         //2-2 用户名对应的密码错误
-        json response;
-        response["msgId"] = LOGIN_MSG_ACK;
+        LOG_INFO << "account password error!~";
         response["errno"] = 1;
-        response["errmsg"] = "account password error";
-        conn->send(response.dump());
+        response["errmsg"] = "account password error";    
     } else if (user.getState() == "online") {
         //2-3 用户已经登录 不允许重复登录
-        json response;
-        response["msgId"] = LOGIN_MSG_ACK;
         response["errno"] = 2;
         response["errmsg"] = "account already login";
-        conn->send(response.dump());
     } else {
         //2-4 登录成功
         //（1）登录成功 记录用户的连接信息
         // map会被多个线程调用 需要考虑线程安全问题
         // 锁的粒度一定要小 否则多线程变成一个串行的线程 没有体现并发程序的优势
+        LOG_INFO << "login success!";
         {
             lock_guard<mutex> lock(_connMutex);
             _userConnMap.insert({uid, conn});
         }
 
-        //（2）需要更新用户状态信息
-        user.setState("online");
-        _userModel.updateState(user);
-
-        //（3）返回响应消息
-        json response;
-        response["msgId"] = LOGIN_MSG_ACK;
+        //（2）设置返回的响应消息
         response["errno"] = 0;
         response["uid"] = user.getId();
         response["username"] = user.getName();
+        response["sysmsg"] = "login success.";
+
+        //（3）需要更新用户状态信息
+        user.setState("online");
+        _userModel.updateState(user);
 
         //（4）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
         vector<string> messages = _offMessageModel.query(uid);
@@ -183,10 +190,8 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             }
             response["groups"] = groups_t;
         }
-
-
-        conn->send(response.dump());
     }
+    conn->send(response.dump());
 }
 
 
