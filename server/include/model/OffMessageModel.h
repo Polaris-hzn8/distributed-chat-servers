@@ -15,11 +15,11 @@
 class OffMessageModel {
 public:
     //离线消息存储 offmessage表插入操作
-    bool insert(int userid, string message);
+    bool insert(int uid, string message);
     //离线消息删除 offmessage表删除操作
-    bool remove(int userid);
+    bool remove(int uid);
     //离线消息查询 根据id查询对应的offmessage数据
-    vector<string> query(int userid);
+    vector<string> query(int uid);
 };
 
 

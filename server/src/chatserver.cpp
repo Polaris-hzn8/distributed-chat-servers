@@ -80,7 +80,7 @@ void ChatServer::onMessage(const TcpConnectionPtr &conn, Buffer *buff, Timestamp
 
     //2.解耦网络模块与业务模块的代码 OOP解耦模块之间的关系两种方式：使用基于面向接口的编程（抽象基类）、基于回调操作
     //通过js["msg_id"]来 -> 获取业务handler -> conn json time
-    auto msgHandler = ChatService::instance()->getHandler(js["msg_id"].get<int>());
+    auto msgHandler = ChatService::instance()->getHandler(js["msgId"].get<int>());
     //回调消息绑定好的事件处理器 来执行相应的业务处理
     msgHandler(conn, js, time);
 }

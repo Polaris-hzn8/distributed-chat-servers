@@ -18,8 +18,8 @@ bool GroupModel::createGroup(Group &group) {
     Mysql mysql;
     if (mysql.connect()) {
         if (mysql.update(sql)) {
-            int id = mysql_insert_id(mysql.getConnection());
-            group.setId(id);
+            int gid = mysql_insert_id(mysql.getConnection());
+            group.setId(gid);
             return true;
         }
     }
@@ -27,10 +27,10 @@ bool GroupModel::createGroup(Group &group) {
 }
 
 //加入群组
-bool GroupModel::joinGroup(int userid, int groupid, string grouprole) {
+bool GroupModel::joinGroup(int uid, int gid, string grouprole) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "insert into groupuser values('%d', '%d', '%s')", groupid, userid, grouprole.c_str());
+    sprintf(sql, "insert into groupuser values('%d', '%d', '%s')", gid, uid, grouprole.c_str());
 
     //2.向数据库插入群组用户信息
     Mysql mysql;
@@ -43,7 +43,7 @@ bool GroupModel::joinGroup(int userid, int groupid, string grouprole) {
 }
 
 //查询用户所有的群组信息
-vector<Group> GroupModel::queryGroups(int userid) {
+vector<Group> GroupModel::queryGroups(int uid) {
     /*
         1.先根据userid在groupuser表中查询出该用户所有的群组信息
         2.再根据群组信息查询属于该群组的所有用户的userid 并且和user表进行多表联合查询 查询用户的详细信息
@@ -52,7 +52,7 @@ vector<Group> GroupModel::queryGroups(int userid) {
     //1.组装sql语句
     char sql[1024] = {0};
     sprintf(sql, "select a.id, a.groupname, a.groupdesc from allgroup a inner join \
-    groupuser b on a.id = b.groupid where b.userid = %d", userid);
+    groupuser b on a.id = b.groupid where b.userid = %d", uid);
 
     //2.连接数据库
     vector<Group> groups;
@@ -99,9 +99,9 @@ vector<Group> GroupModel::queryGroups(int userid) {
 }
 
 //根据gid查询群组的所有用户id 再将消息群发给群成员（群聊消息）
-vector<int> GroupModel::queryGroupUsers(int userid, int groupid) {
+vector<int> GroupModel::queryGroupUsers(int uid, int gid) {
     char sql[1024] = {0};
-    sprintf(sql, "select userid from groupuser where groupid = %d and userid != %d", groupid, userid);
+    sprintf(sql, "select userid from groupuser where groupid = %d and userid != %d", gid, uid);
 
     vector<int> ids;
     Mysql mysql;
@@ -128,3 +128,5 @@ bool GroupModel::dismissGroup(Group &group) {
 bool GroupModel::quitGroup(Group &group) {
 
 }
+
+

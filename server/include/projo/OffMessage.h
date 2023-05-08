@@ -14,18 +14,18 @@
 class OffMessage {
 public:
     OffMessage(int userid = -1, string message = "") {
-        this->userid = userid;
+        this->uid = uid;
         this->message = message;
     }
 
-    void setUserId(int userid) { this->userid = userid; }
+    void setUserId(int userid) { this->uid = uid; }
     void setMessage(string message) { this->message = message; }
 
-    int getUserId() { return this->userid; }
+    int getUserId() { return this->uid; }
     string getMessage() {return this->message; }
 
 private:
-    int userid;
+    int uid;
     string message;
 };
 

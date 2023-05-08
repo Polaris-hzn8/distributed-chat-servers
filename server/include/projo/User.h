@@ -13,26 +13,26 @@
 // user表的ORM类
 class User {
 public:
-    User(int id = -1, string name = "", string password = "", string state = "offline") {
-        this->id = id;
-        this->name = name;
+    User(int uid = -1, string username = "", string password = "", string state = "offline") {
+        this->uid = uid;
+        this->username = username;
         this->password = password;
         this->state = state;
     }
 
-    void setId(int id) { this->id = id; }
-    void setName(string name) { this->name = name; }
+    void setId(int id) { this->uid = uid; }
+    void setName(string name) { this->username = username; }
     void setPassword(string password) { this->password = password; }
     void setState(string state) { this->state = state; }
 
-    int getId() { return this->id; }
-    string getName() { return this->name; }
+    int getId() { return this->uid; }
+    string getName() { return this->username; }
     string getPassword() { return this->password; }
     string getState() { return this->state; }
 
 private:
-    int id;
-    string name;
+    int uid;
+    string username;
     string password;
     string state;
 };

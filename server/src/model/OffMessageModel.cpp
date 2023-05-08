@@ -9,10 +9,10 @@
 #include "OffMessageModel.h"
 
 //离线消息存储 offmessage表插入操作
-bool OffMessageModel::insert(int userid, string message) {
+bool OffMessageModel::insert(int uid, string message) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "insert into offlinemessage(userid, message) values(%d, '%s')", userid, message.c_str());
+    sprintf(sql, "insert into offlinemessage(userid, message) values(%d, '%s')", uid, message.c_str());
     
     //2.数据插入
     Mysql mysql;
@@ -21,10 +21,10 @@ bool OffMessageModel::insert(int userid, string message) {
 }
 
 //离线消息删除 offmessage表删除操作
-bool OffMessageModel::remove(int userid) {
+bool OffMessageModel::remove(int uid) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "delete from offlinemessage where userid = %d", userid);
+    sprintf(sql, "delete from offlinemessage where userid = %d", uid);
     
     //2.数据插入
     Mysql mysql;
@@ -33,10 +33,10 @@ bool OffMessageModel::remove(int userid) {
 }
 
 //离线消息查询 根据id查询对应的offmessage数据
-vector<string> OffMessageModel::query(int userid) {
+vector<string> OffMessageModel::query(int uid) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "select message from offlinemessage where userid = %d", userid);
+    sprintf(sql, "select message from offlinemessage where userid = %d", uid);
     
     //2.数据查询
     vector<string> messages;

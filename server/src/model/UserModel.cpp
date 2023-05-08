@@ -21,18 +21,18 @@ bool UserModel::insert(User &user) {
         if (mysql.update(sql)) {
             //在数据插入成功后 将自动生成的id返回给用户
             //获取插入成功的用户数据 生成的主键id
-            int id = mysql_insert_id(mysql.getConnection());
-            user.setId(id);
+            int uid = mysql_insert_id(mysql.getConnection());
+            user.setId(uid);
             return true;
         }
     }
     return false;
 }
 
-User UserModel::query(int id) {
+User UserModel::query(int uid) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "select * from user where id = %d", id);
+    sprintf(sql, "select * from user where id = %d", uid);
     
     //2.数据插入
     Mysql mysql;

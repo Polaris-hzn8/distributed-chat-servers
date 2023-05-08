@@ -31,7 +31,7 @@ public:
 	//1.获取单例对象的接口函数
 	static ChatService* instance();
 	//2.获取消息对应的事件处理器
-	MsgHandler getHandler(int msg_id);
+	MsgHandler getHandler(int msgId);
 	//3.处理登录业务
 	void login(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//4.处理注册业务

@@ -86,12 +86,12 @@ int main(int argc, char *argv[]) {
                 /* 用户登录 */
                 int uid = 0;
                 char password[50] = {0};
-                cout << "userid:"; cin >> uid; cin.get();
+                cout << "uid:"; cin >> uid; cin.get();
                 cout << "passwored: "; cin.getline(password, 50);
 
                 /* 组装json数据 */
                 json js;
-                js["msg_id"] = LOGIN_MSG;
+                js["msgId"] = LOGIN_MSG;
                 js["uid"] = uid;
                 js["password"] = password;
                 string request = js.dump();
@@ -163,11 +163,11 @@ int main(int argc, char *argv[]) {
                                 vector<string> offlinemsgs = response["offlinemsg"];
                                 for (string offlinemsg_s : offlinemsgs) {
                                     json offlinemsg_j = json::parse(offlinemsg_s);
-                                    time_t time = offlinemsg_j["time"];
                                     int uid = offlinemsg_j["uid"];
                                     string username = offlinemsg_j["username"];
                                     string msg = offlinemsg_j["msg"];
-                                    printf("<%s-%s-%d> : %s", time, username, uid, msg);
+                                    string time = offlinemsg_j["time"];
+                                    printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, msg.c_str());
                                 }
                             }
 
@@ -177,7 +177,7 @@ int main(int argc, char *argv[]) {
 
                             /* 进入聊天主菜单页面 用户可以开始进行各种业务操作 */
                             mainMenu();
-                            
+
                         }
                     }
                 }
@@ -194,7 +194,7 @@ int main(int argc, char *argv[]) {
 
                 /* 组装json数据 */
                 json js;
-                js["msg_id"] = REG_MSG;
+                js["msgId"] = REG_MSG;
                 js["username"] = username;
                 js["password"] = password;
                 string request = js.dump();
@@ -234,16 +234,29 @@ int main(int argc, char *argv[]) {
 
 
 //显示当前登录用户的基本信息
-void showUserInfo();
+void showUserInfo() {
+
+}
+
 //主聊天页面程序
-void mainMenu();
+void mainMenu() {
+
+}
 
 //获取系统时间
-string getCurrentTime();
+string getCurrentTime() {
+
+}
+
 //消息接收线程
-void readTaskHandler(int clientfd);
+void readTaskHandler(int clientfd) {
+
+}
+
 //消息接收线程
-void writeTaskHandler(int clientfd);
+void writeTaskHandler(int clientfd) {
+
+}
 
 
 

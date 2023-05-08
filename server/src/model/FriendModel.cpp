@@ -10,10 +10,10 @@
 #include "FriendModel.h"
 
 //添加好友 好友列表一般存储在客户端
-bool FriendModel::insert(int userid, int friendid) {
+bool FriendModel::insert(int uid, int fid) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "insert into friend values(%d, %d)", userid, friendid);
+    sprintf(sql, "insert into friend values(%d, %d)", uid, fid);
     
     //2.数据更新
     Mysql mysql;
@@ -25,10 +25,10 @@ bool FriendModel::insert(int userid, int friendid) {
 
 
 //返回好友列表
-vector<User> FriendModel::query(int userid) {
+vector<User> FriendModel::query(int uid) {
     //1.组装sql语句
     char sql[1024] = {0};
-    sprintf(sql, "select a.id, a.name, a.state from user a inner join friend b on b.friendid = a.id where b.userid = %d", userid);
+    sprintf(sql, "select a.id, a.name, a.state from user a inner join friend b on b.friendid = a.id where b.userid = %d", uid);
     
     //2.数据查询
     vector<User> friends;

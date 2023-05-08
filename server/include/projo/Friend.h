@@ -12,20 +12,20 @@
 
 class Friend {
 public:
-    Friend(int userid = -1, int friendid = -1) {
-        this->userid = userid;
-        this->friendid = friendid;
+    Friend(int uid = -1, int fid = -1) {
+        this->uid = uid;
+        this->fid = fid;
     }
 
-    void setUserId(int userid) { this->userid = userid; }
-    void setFriendId(int friendid) { this->friendid = friendid; }
+    void setUserId(int uid) { this->uid = uid; }
+    void setFriendId(int fid) { this->fid = fid; }
 
-    int getUserId() { return this->userid; }
-    int getFriendId() { return this->friendid; }
+    int getUserId() { return this->uid; }
+    int getFriendId() { return this->fid; }
 
 private:
-    int userid;
-    int friendid;
+    int uid;
+    int fid;
 };
 
 

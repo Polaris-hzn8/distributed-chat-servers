@@ -15,11 +15,11 @@ public:
     //创建群组
     bool createGroup(Group &group);
     //加入群组
-    bool joinGroup(int userid, int groupid, string grouprole);
+    bool joinGroup(int uid, int gid, string grouprole);
     //查询用户所在群组信息
-    vector<Group> queryGroups(int userid);
+    vector<Group> queryGroups(int uid);
     //根据gid查询群组用户列表 主要用于群聊消息
-    vector<int> queryGroupUsers(int userid, int groupid);
+    vector<int> queryGroupUsers(int uid, int gid);
     
     //解散群组
     bool dismissGroup(Group &group);
