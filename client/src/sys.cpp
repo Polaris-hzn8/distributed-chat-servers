@@ -43,14 +43,15 @@ void readTaskHandler(int clientfd) {
         //2.数据反序列化与解析
         json js = json::parse(buff);
         int msgId = js["msgId"].get<int>();
-
         if (msgId == ONE_CHAT_MSG) {
             /* 收到好友的单聊消息 */
             int fid = js["from"].get<int>();
             string time = js["time"];
             string username = js["username"];
             string message = js["msg"];
-            printf("<%s %d %s> : %s", time.c_str(), fid, username.c_str(), message.c_str());
+
+			printf("<%s %d %s> : %s\n", time.c_str(), fid, username.c_str(), message.c_str());
+            printf("<%s %d %s> : %s\n", time.c_str(), fid, username.c_str(), message.c_str());
             continue;
         }
     }

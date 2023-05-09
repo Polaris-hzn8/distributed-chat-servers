@@ -27,7 +27,7 @@ ChatService::ChatService() {
     _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
     _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
     _msgHandlerMap.insert({ACOUNT_FRESH_MSG, bind(&ChatService::sendNewestInfo, this, _1, _2, _3) });//更新客户端数据
-    
+
     _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::chat, this, _1, _2, _3) });//单聊
     _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
 
@@ -323,7 +323,8 @@ void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp ti
     //zhangsan给lch发送添加好友的消息 {"msgId":6, "uid":13, "fid":28}
     int uid = js["uid"].get<int>();
     int fid = js["fid"].get<int>();
-    _friendModel.insert(uid, fid);    
+    _friendModel.insert(uid, fid);
+    _friendModel.insert(fid, uid);
 }
 
 

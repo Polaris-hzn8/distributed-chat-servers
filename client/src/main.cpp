@@ -98,15 +98,15 @@ int main(int argc, char *argv[]) {
                             showAccountInfo();
                             /* 显示当前用户的离线消息（私聊离线信息 & 群组离线消息） */
                             if (response.contains("offlinemsgs")) {
-                                printf("You have offlinemsg from your friends!~");
-                                vector<string> offlinemsgs = response["offlinemsg"];
+                                printf("You have offlinemsgs from your friends!~\n");
+                                vector<string> offlinemsgs = response["offlinemsgs"];
                                 for (string offlinemsg_s : offlinemsgs) {
                                     json offlinemsg_j = json::parse(offlinemsg_s);
-                                    int uid = offlinemsg_j["uid"];
+                                    int uid = offlinemsg_j["from"];
                                     string username = offlinemsg_j["username"];
                                     string message = offlinemsg_j["msg"];
                                     string time = offlinemsg_j["time"];
-                                    printf("<%s %d %s> : %s", time.c_str(), uid, username.c_str(), message.c_str());
+                                    printf("<%s %d %s> : %s\n", time.c_str(), uid, username.c_str(), message.c_str());
                                 }
                             }
 
