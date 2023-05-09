@@ -6,30 +6,12 @@
 ************************************************************************/
 
 #include "head.h"
+#include "menu.h"
+#include "common.h"
+#include "data.h"
 #include "Group.h"
 #include "User.h"
-#include "common.h"
-
-//将部分服务端部分消息在客户端进行保存 当客户端需要使用时可以直接使用
-//减轻访问服务器次数 减轻服务器压力
-//登录的用户信息
-User userInfo_g;
-//登录用户的好友列表
-vector<User> friendList_g;
-//登录用户的群组信息列表
-vector<Group> groupList_g;
-
-//显示当前登录用户的基本信息
-void showAccountInfo();
-//主聊天页面程序
-void mainMenu(int clientfd);
-
-//获取系统时间
-string getCurrentTime();
-//消息接收线程
-void readTaskHandler(int clientfd);
-//消息接收线程
-void writeTaskHandler(int clientfd);
+#include "imfunc.h"
 
 //main线程用作发送线程 子线程用作接收线程
 //聊天客户端程序实现
@@ -242,55 +224,6 @@ int main(int argc, char *argv[]) {
     }
     return 0;
 }
-
-//获取系统时间
-string getCurrentTime() {
-
-}
-
-//消息接收线程
-void readTaskHandler(int clientfd) {
-    for (;;) {
-        //1.接收数据
-        char buff[1024] = {0};
-        if (recv(clientfd, buff, 1024, 0) <= 0) {
-            close(clientfd);
-            exit(-1);
-        }
-
-        //2.数据反序列化与分析
-        json js = json::parse(buff);
-        if (js["msgId"].get<int>() == ONE_CHAT_MSG) {
-            /* 单聊消息 */
-            string time = js["time"];
-            int uid = js["uid"];
-            string username = js["username"];
-            string message = js["msg"];
-            printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, message.c_str());
-            continue;
-        }
-    }
-}
-
-//消息接收线程
-void writeTaskHandler(int clientfd) {
-
-}
-
-
-//显示当前登录用户的基本信息
-void showAccountInfo() {
-
-}
-
-//主聊天页面程序
-void mainMenu(int clientfd) {
-
-
-
-
-}
-
 
 
 
