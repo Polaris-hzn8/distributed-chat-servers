@@ -13,6 +13,12 @@
 #include "User.h"
 #include "imfunc.h"
 
+void print();
+int serverConnect(char *ip, uint16_t port);
+void login(int clientfd);
+void regis(int clientfd);
+void quit(int clientfd);
+
 //main线程用作发送线程 子线程用作接收线程
 //聊天客户端程序实现
 int main(int argc, char *argv[]) {
@@ -24,14 +30,53 @@ int main(int argc, char *argv[]) {
     char *ip = argv[1];
     uint16_t port = atoi(argv[2]);
 
-    //2.创建socketfd
+    //2.连接服务器
+    int clientfd = serverConnect(ip, port);
+
+    //3.主线程用于接收用户输入 负责发送数据
+    for (;;) {
+        // 进入系统登录界面
+        print();
+        // 为什么要读取调缓冲区的回车？
+        // 前面读入了整数int 后面需要读入字符串 如果整数不读调缓冲区残留的回车 则会面的字符串读取将直接把回车读掉
+        // 当从缓冲区读入整数后 需要及时将缓冲区残留的回车读掉 防止后面读取字符串出现问题
+        int choice; cin >> choice; cin.get();//读调缓冲区残留的回车
+        switch(choice) {
+            case 1:
+                login(clientfd);//用户登录
+                break;
+            case 2:
+                regis(clientfd);//用户注册
+                break;
+            case 3:
+                quit(clientfd);//关闭登录界面
+            default:
+                cerr << "invalid input!" << endl;
+                break;
+        }
+    }
+    return 0;
+}
+
+
+void print() {
+    cout << "=======================" << endl;
+    cout << "1.login" << endl;
+    cout << "2.register" << endl;
+    cout << "3.quit" << endl;
+    cout << "=======================" << endl;
+    cout << "choice:";
+}
+
+int serverConnect(char *ip, uint16_t port) {
+    //1.创建socketfd
     int clientfd = socket(AF_INET, SOCK_STREAM, 0);
     if (clientfd == -1) {
         cerr << "socketfd create error!~" << endl;
         exit(-1);
     }
 
-    //3.进行连接
+    //2.进行连接
     sockaddr_in server;
     memset(&server, 0, sizeof(sockaddr_in));
 
@@ -42,142 +87,111 @@ int main(int argc, char *argv[]) {
         cerr << "connect server error!~" << endl;
         exit(-1);
     }
+    return clientfd;
+}
 
-    //4.主线程用于接收用户输入 负责发送数据
-    for (;;) {
-        // 4-1 系统首页面
-        cout << "=======================" << endl;
-        cout << "1.login" << endl;
-        cout << "2.register" << endl;
-        cout << "3.quit" << endl;
-        cout << "=======================" << endl;
-        cout << "choice:";
 
-        /*
-            为什么要读取调缓冲区的回车？
-            前面读入了整数int 后面需要读入字符串 如果整数不读调缓冲区残留的回车 则会面的字符串读取将直接把回车读掉
-            当从缓冲区读入整数后 需要及时将缓冲区残留的回车读掉 防止后面读取字符串出现问题
-        */
+void login(int clientfd) {
+    int uid = 0;
+    char password[50] = {0};
+    cout << "uid:"; cin >> uid; cin.get();
+    cout << "password:"; cin.getline(password, 50);
 
-        int choice;
-        cin >> choice;
-        cin.get();//读调缓冲区残留的回车
+    //1.组装json数据
+    json js;
+    js["msgId"] = LOGIN_MSG;
+    js["uid"] = uid;
+    js["password"] = password;
+    string request = js.dump();
 
-        switch(choice) {
-            case 1: {
-                /* 用户登录 */
-                int uid = 0;
-                char password[50] = {0};
-                cout << "uid:"; cin >> uid; cin.get();
-                cout << "password:"; cin.getline(password, 50);
-
-                /* 组装json数据 */
-                json js;
-                js["msgId"] = LOGIN_MSG;
-                js["uid"] = uid;
-                js["password"] = password;
-                string request = js.dump();
-
-                /* 发送json request 数据 */
-                int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
-                if (len == -1) cerr << "send login request error!~" << request << endl;
-                else {
-                    /* 接受json response 数据 */
-                    char buff[1024] = {0};
-                    if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv login response error!~" << request << endl;
-                    else {
-                        json response = json::parse(buff);
-                        if (response["errno"].get<int>() != 0) {
-                            /* 登录信息有误 打印服务器返回的异常信息 */
-                            string errmsg = response["errmsg"]; 
-                            cerr << errmsg << endl;
-                        } else {
-                            /* 登录成功 初始化本地数据 并打印账户信息 */
-                            accountRefresh(response);
-                            /* 显示当前登录用户的基本信息 */
-                            showAccountInfo();
-                            /* 显示当前用户的离线消息（私聊离线信息 & 群组离线消息） */
-                            if (response.contains("offlinemsgs")) {
-                                printf("You have offlinemsgs from your friends!~\n");
-                                vector<string> offlinemsgs = response["offlinemsgs"];
-                                for (string offlinemsg_s : offlinemsgs) {
-                                    json offlinemsg_j = json::parse(offlinemsg_s);
-                                    int uid = offlinemsg_j["from"];
-                                    string username = offlinemsg_j["username"];
-                                    string message = offlinemsg_j["msg"];
-                                    string time = offlinemsg_j["time"];
-                                    printf("<%s %d %s> : %s\n", time.c_str(), uid, username.c_str(), message.c_str());
-                                }
-                            }
-
-                            /* 启动客户端消息接受线程 不停的接受来自服务端的所有数据 */
-                            /* pthread_create & pthread_detach */
-                            thread readTask(readTaskHandler, clientfd);//创建线程用于服务器消息接受
-                            readTask.detach();//设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
-
-                            /* 进入聊天主菜单页面 用户可以开始进行各种业务操作 */
-                            mainMenu(clientfd);
-
-                        }
+    //2.发送json request 数据
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send login request error!~" << request << endl;
+    else {
+        //3.接受json response 数据
+        char buff[1024] = {0};
+        if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv login response error!~" << request << endl;
+        else {
+            //4.json数据处理
+            json response = json::parse(buff);
+            if (response["errno"].get<int>() != 0) {
+                //4-1 登录信息有误 打印服务器返回的异常信息
+                string errmsg = response["errmsg"]; 
+                cerr << errmsg << endl;
+            } else {
+                //4-2 登录成功 初始化本地数据 并打印账户信息
+                accountRefresh(response);
+                //4-3 显示当前登录用户的基本信息
+                showAccountInfo();
+                //4-4 显示当前用户的离线消息（私聊离线信息 & 群组离线消息）
+                if (response.contains("offlinemsgs")) {
+                    printf("You have offlinemsgs from your friends!~\n");
+                    vector<string> offlinemsgs = response["offlinemsgs"];
+                    for (string offlinemsg_s : offlinemsgs) {
+                        json offlinemsg_j = json::parse(offlinemsg_s);
+                        int uid = offlinemsg_j["from"];
+                        string username = offlinemsg_j["username"];
+                        string message = offlinemsg_j["msg"];
+                        string time = offlinemsg_j["time"];
+                        printf("<%s %d %s> : %s\n", time.c_str(), uid, username.c_str(), message.c_str());
                     }
                 }
 
-                break;
-            }
+                //4-5 启动客户端消息接受线程 不停的接受来自服务端的所有数据
+                /* pthread_create & pthread_detach */
+                thread readTask(readTaskHandler, clientfd);//创建线程用于服务器消息接受
+                readTask.detach();//设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
 
-            case 2: {
-                /* 用户注册 */
-                char username[50] = {0};
-                char password[50] = {0};
-                cout << "username:"; //cin >> userid; cin.get(); 不能使用cin遇见空格结束 否则输入的内容不能带有空格 gets
-                cin.getline(username, 50);
-                cout << "passwored: "; //cin >> passwd; cin.get();
-                cin.getline(password, 50);
+                //4-6 进入聊天主菜单页面 用户可以开始进行各种业务操作
+                mainMenu(clientfd);
 
-                /* 组装json数据 */
-                json js;
-                js["msgId"] = REG_MSG;
-                js["username"] = username;
-                js["password"] = password;
-                string request = js.dump();
-
-                /* 发送json request 数据 */
-                int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
-                if (len == -1) cerr << "send reg request error!~" << request << endl;
-                else {
-                    /* 接受json response 数据 */
-                    char buff[1024] = {0};
-                    if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv reg response error!~" << request << endl;
-                    else {
-                        json response = json::parse(buff);
-                        if (response["errno"].get<int>() != 0) {
-                            string errmsg = response["errmsg"];
-                            cerr << errmsg << endl;
-                        } else {
-                            string errmsg = response["sysmsg"];
-                            cerr << errmsg << endl;
-                            cout << username << " register success, userid is " << response["uid"] << ", don't forget it!" << endl;
-                        }
-                    }
-                }
-
-                break;
-            }
-
-            case 3: {
-                /* 用户登出 */
-                close(clientfd);
-                exit(0);
-            }
-
-            default: {
-                cerr << "invalid input!" << endl;
-                break;
             }
         }
     }
-    return 0;
 }
+
+void regis(int clientfd) {
+    char username[50] = {0};
+    char password[50] = {0};
+    cout << "username:"; //cin >> userid; cin.get(); 不能使用cin遇见空格结束 否则输入的内容不能带有空格 gets
+    cin.getline(username, 50);
+    cout << "passwored: "; //cin >> passwd; cin.get();
+    cin.getline(password, 50);
+
+    //1.组装json数据
+    json js;
+    js["msgId"] = REG_MSG;
+    js["username"] = username;
+    js["password"] = password;
+    string request = js.dump();
+
+    //2.发送json request 数据
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send reg request error!~" << request << endl;
+    else {
+        //3.接受json response 数据
+        char buff[1024] = {0};
+        if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv reg response error!~" << request << endl;
+        else {
+            //4.json数据的处理
+            json response = json::parse(buff);
+            if (response["errno"].get<int>() != 0) {
+                string errmsg = response["errmsg"];
+                cerr << errmsg << endl;
+            } else {
+                string errmsg = response["sysmsg"];
+                cerr << errmsg << endl;
+                cout << username << " register success, userid is " << response["uid"] << ", don't forget it!" << endl;
+            }
+        }
+    }
+}
+
+void quit(int clientfd) {
+    close(clientfd);
+    exit(0);
+}
+
 
 
 
