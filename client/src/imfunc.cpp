@@ -35,12 +35,14 @@ unordered_map<string, function<void(int, string)>> commandHandlerMap = {
     {"refresh", refresh}
 };
 
+//<usage> help
 void help(int clientfd, string str) {
     cout << "system command list:" << endl;
     for (auto command : commandMap) cout << command.first << " : " << command.second << endl;
     cout << endl;
 }
 
+//<usage> chat:fid:message
 void chat(int clientfd, string str) {
     //1.str命令验证
     int idx = str.find(":");
@@ -67,6 +69,7 @@ void chat(int clientfd, string str) {
     if (len == -1) cerr << "send chat msg failed!~" << request << endl;
 }
 
+//<usage> addFriend:fid
 void addFriend(int clientfd, string str) {
     int fid = atoi(str.c_str());
     json js;
@@ -79,6 +82,7 @@ void addFriend(int clientfd, string str) {
     if (len == -1) cerr << "send chat msg falied!~" << request << endl;
 }
 
+//<usage> refresh
 void refresh(int clientfd, string str) {
     //1.发送用户数据刷新请求
     json js;
@@ -101,18 +105,48 @@ void refresh(int clientfd, string str) {
     cout << "account refresh error please check your network." << endl;
 }
 
-void createGroup(int, string) {
+//<usage> createGroup:groupname:groupdesc
+void createGroup(int clientfd, string str) {
+    int idx = str.find(":");
+    if (idx == -1) {
+        cerr << "createGroup command invalid!~" << endl;
+        return;
+    }
+    //1.获取参数
+    string groupname = str.substr(0, idx);
+    string groupdesc = str.substr(idx + 1, str.size() - idx);
 
+    //2.组装json字符串
+    json js;
+    js["msgId"] = CREATE_GROUP_MSG;
+    js["uid"] = userInfo_g.getId();
+    js["groupname"] = groupname;
+    js["groupdesc"] = groupdesc;
+    string request = js.dump();
+
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send group create msg falied!~" << request << endl;
 }
 
-void joinGroup(int, string) {
+//<usage> joinGroup:gid
+void joinGroup(int clientfd, string str) {
+    int gid = atoi(str.c_str());
+    json js;
+    js["msgId"] = ADD_GROUP_MSG;
+    js["uid"] = userInfo_g.getId();
+    js["gid"] = gid;
+    string request = js.dump();
 
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send group create msg falied!~" << request << endl;
 }
 
+//<usage> groupChat:gid:message
 void groupChat(int, string) {
 
 }
 
+//<usage> logout
 void logout(int, string) {
 
 }
