@@ -153,7 +153,7 @@ void mainMenu(int clientfd) {
 	help();
 
 	char buff[1024] = {0};
-	for (;;) {
+	while (isMainMenuRunning) {
 		//1.输入commandbuff
 		cin.getline(buff, 1024);
 		string commandbuff(buff);//用buff构造一个string名为commandbuff

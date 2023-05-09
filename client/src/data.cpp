@@ -18,4 +18,6 @@ vector<User> friendList_g;
 //登录用户的群组信息列表
 vector<Group> groupList_g;
 
+bool isMainMenuRunning = false;
+
 

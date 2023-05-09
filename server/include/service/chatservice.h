@@ -38,10 +38,12 @@ public:
 	void regis(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//5.发送账户基本信息（用户客户端请求信息刷新）
 	void sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//6.处理客户端异常退出
+	//6.处理客户端正常退出
+	void clientClose(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//7.处理客户端异常退出
 	void clientCloseUnexpectedly(const TcpConnectionPtr &conn);
-	//7.处理服务端异常退出
-	void reset();
+	//8.处理服务端异常退出
+	void reset();	
 
 	//单聊
 	void chat(const TcpConnectionPtr &conn, json &js, Timestamp time);

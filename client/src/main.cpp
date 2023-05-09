@@ -157,6 +157,7 @@ void login(int clientfd) {
                 readTask.detach();//设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
 
                 //4-6 进入聊天主菜单页面 用户可以开始进行各种业务操作
+                isMainMenuRunning = true;
                 mainMenu(clientfd);
 
             }

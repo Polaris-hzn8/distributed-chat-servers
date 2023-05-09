@@ -168,8 +168,16 @@ void groupChat(int clientfd, string str) {
 }
 
 //<usage> logout
-void logout(int, string) {
+void logout(int clientfd, string) {
+    json js;
+    js["msgId"] = LOGOUT_MSG;
+    js["uid"] = userInfo_g.getId();
 
+    string request = js.dump();
+
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send logout msg falied!~" << request << endl;
+    else isMainMenuRunning = false;
 }
 
 

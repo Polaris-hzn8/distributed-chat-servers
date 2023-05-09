@@ -21,5 +21,6 @@ extern vector<User> friendList_g;
 //登录用户的群组信息列表
 extern vector<Group> groupList_g;
 
+extern bool isMainMenuRunning;
 
 #endif

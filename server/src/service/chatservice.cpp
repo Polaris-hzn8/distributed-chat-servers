@@ -27,6 +27,7 @@ ChatService::ChatService() {
     _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
     _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
     _msgHandlerMap.insert({ACOUNT_FRESH_MSG, bind(&ChatService::sendNewestInfo, this, _1, _2, _3) });//更新客户端数据
+    _msgHandlerMap.insert({LOGOUT_MSG, bind(&ChatService::clientClose, this, _1, _2, _3) });//更新客户端数据
 
     _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::chat, this, _1, _2, _3) });//单聊
     _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
@@ -255,6 +256,22 @@ void ChatService::sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timesta
     conn->send(response.dump());
 }
 
+//处理客户端异常退出
+void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    int uid = js["uid"];
+    //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
+    //利用大括号 降低锁的粒度
+    {
+        lock_guard<mutex> lock(_connMutex);
+        auto it = _userConnMap.find(uid);
+        if (it != _userConnMap.end()) _userConnMap.erase(it);
+    }
+
+    //2.需要更新用户状态信息
+    User user;
+    user.setState("offline");
+    _userModel.updateState(user);
+}
 
 //处理客户端异常退出
 void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
