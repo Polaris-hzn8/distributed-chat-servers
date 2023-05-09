@@ -14,8 +14,6 @@
 string getCurrentTime();
 //消息接收线程
 void readTaskHandler(int clientfd);
-//消息接收线程
-void writeTaskHandler(int clientfd);
 
 //help command handler
 extern unordered_map<string, string> commandMap;

@@ -34,7 +34,18 @@ unordered_map<string, function<void(int, string)>> commandHandlerMap = {
 
 //获取系统时间
 string getCurrentTime() {
+    auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    struct tm *ptm = localtime(&t);
+    int year = ptm->tm_year + 1900;
+    int month = ptm->tm_mon + 1;
+    int day = ptm->tm_mday;
+    int hour = ptm->tm_hour;
+    int minite = ptm->tm_min;
+    int second = ptm->tm_sec;
     
+    char content[60] = {0};
+    sprintf(content, "%d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minite, second);
+    return string(content);
 }
 
 //消息接收线程
@@ -60,12 +71,6 @@ void readTaskHandler(int clientfd) {
         }
     }
 }
-
-//消息接收线程
-void writeTaskHandler(int clientfd) {
-
-}
-
 
 void help(int fd, string str) {
     cout << "system command list:" << endl;
