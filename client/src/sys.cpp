@@ -92,10 +92,10 @@ void accountRefresh(json &response) {
 	groupList_g.clear();
 
 	/* 记录登录用户的uid与username */
-	string sysmsg = response["sysmsg"];
-	cout << sysmsg << endl;
-	userInfo_g.setId(response["uid"].get<int>());
-	userInfo_g.setName(response["username"]);
+	int uid = response["uid"].get<int>();
+	string username = response["username"];
+	userInfo_g.setId(uid);
+	userInfo_g.setName(username);
 
 	/* 记录当前用户的好友列表信息 */
 	if (response.contains("friends")) {

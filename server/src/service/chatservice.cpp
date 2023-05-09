@@ -26,6 +26,8 @@ ChatService::ChatService() {
     //相应的消息id 及其 与对应的事件回调处理函数 做一个绑定
     _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
     _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
+    _msgHandlerMap.insert({ACOUNT_FRESH_MSG, bind(&ChatService::sendNewestInfo, this, _1, _2, _3) });//更新客户端数据
+    
     _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::chat, this, _1, _2, _3) });//单聊
     _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
 
@@ -109,8 +111,6 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
 
     //2.用户登录验证
     User user = _userModel.query(uid);
-    cout << user.getId() << endl;
-    cout << user.getPassword() << endl;
 
     if (user.getId() == -1) {
         //2-1 用户名不存在
@@ -193,6 +193,64 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             }
             response["groups"] = groups_t;
         }
+        
+    }
+    conn->send(response.dump());
+}
+
+
+//发送账户基本信息（用户客户端请求信息刷新）
+void ChatService::sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do sendNewestInfo service!";
+    int uid = js["uid"];
+    User user = _userModel.query(uid);
+
+    json response;
+    response["msgId"] = ACOUNT_FRESH_ACK;
+    response["errno"] = 0;
+    //1.用户基本信息
+    response["uid"] = user.getId();
+    response["username"] = user.getName();
+
+    //2.查询该用户的好友列表 并封装成json格式 进行返回
+    vector<User> friends = _friendModel.query(uid);
+    if (!friends.empty()) {
+        vector<string> friends_t;
+        for (User user : friends) {
+            json js;
+            js["uid"] = user.getId();
+            js["username"] = user.getName();
+            js["state"] = user.getState();
+            friends_t.push_back(js.dump());
+        }
+        response["friends"] = friends_t;
+    }
+
+    //3.查询登录用户的群组列表 并封装成json格式 进行返回
+    vector<Group> groups = _groupModel.queryGroups(uid);
+    if (!groups.empty()) {
+        //封装群组信息
+        vector<string> groups_t;
+        for (Group group : groups) {
+            json groupjs;
+            groupjs["gid"] = group.getId();
+            groupjs["groupname"] = group.getName();
+            groupjs["groupdesc"] = group.getDesc();
+            //封装群组信息中的 群组成员信息
+            vector<GroupUser> groupusers = group.getGroupUsers();
+            vector<string> groupusers_t;
+            for (GroupUser groupuser : groupusers) {
+                json groupuserjs;
+                groupuserjs["uid"] = groupuser.getId();
+                groupuserjs["username"] = groupuser.getName();
+                groupuserjs["state"] = groupuser.getState();
+                groupuserjs["grouprole"] = groupuser.getRole();
+                groupusers_t.push_back(groupuserjs.dump());
+            }
+            groupjs["groupusers"] = groupusers_t;
+            groups_t.push_back(groupjs.dump());
+        }
+        response["groups"] = groups_t;
     }
     conn->send(response.dump());
 }

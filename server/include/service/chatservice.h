@@ -36,28 +36,30 @@ public:
 	void login(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//4.处理注册业务
 	void regis(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//5.处理客户端异常退出
+	//5.发送账户基本信息（用户客户端请求信息刷新）
+	void sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	//6.处理客户端异常退出
 	void clientCloseUnexpectedly(const TcpConnectionPtr &conn);
-	//6.处理服务端异常退出
+	//7.处理服务端异常退出
 	void reset();
 
-	//7.单聊
+	//单聊
 	void chat(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//8.添加好友
+	//添加好友
 	void addFriend(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//9.删除好友
+	//删除好友
 	void deleteFriend(const TcpConnectionPtr &conn, json &js, Timestamp time);
 
 
-	//11.创建群组
+	//创建群组
 	void createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//12.解散群组
+	//解散群组
 	void dismissGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//13.加入群组
+	//加入群组
 	void joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//14.退出群组
+	//退出群组
 	void quitGroup(const TcpConnectionPtr &conn, json &js, Timestamp time);
-	//10.群聊
+	//群聊
 	void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
 
 private:
