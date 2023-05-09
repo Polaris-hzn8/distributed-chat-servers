@@ -26,10 +26,13 @@ ChatService::ChatService() {
     //相应的消息id 及其 与对应的事件回调处理函数 做一个绑定
     _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
     _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
-    _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::singleChat, this, _1, _2, _3) });//单聊
+    _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::chat, this, _1, _2, _3) });//单聊
     _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
-    
-    //_msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//群聊
+
+    _msgHandlerMap.insert({CREATE_GROUP_MSG, bind(&ChatService::createGroup, this, _1, _2, _3) });//创建群聊
+    _msgHandlerMap.insert({ADD_GROUP_MSG, bind(&ChatService::joinGroup, this, _1, _2, _3) });//加入群聊
+    _msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//发送群消息
+
 }
 
 //获取消息id对应的事件处理器
@@ -128,27 +131,27 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         // map会被多个线程调用 需要考虑线程安全问题
         // 锁的粒度一定要小 否则多线程变成一个串行的线程 没有体现并发程序的优势
         LOG_INFO << "login success!";
+        response["errno"] = 0;
+        response["sysmsg"] = "login success.";
         {
             lock_guard<mutex> lock(_connMutex);
             _userConnMap.insert({uid, conn});
         }
 
-        //（2）设置返回的响应消息
-        response["errno"] = 0;
-        response["uid"] = user.getId();
-        response["username"] = user.getName();
-        response["sysmsg"] = "login success.";
-
-        //（3）需要更新用户状态信息
+        //（2）需要更新用户状态信息
         user.setState("online");
         _userModel.updateState(user);
 
-        //（4）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
+        //（3）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
         vector<string> messages = _offMessageModel.query(uid);
         if (!messages.empty()) {
-            response["offlinemsg"] = messages;//json直接支持容器序列化与反序列化
+            response["offlinemsgs"] = messages;//json直接支持容器序列化与反序列化
             _offMessageModel.remove(uid);//读取该用户的离线消息后 将该用户的所有离线消息删除
         }
+
+        //（4）设置返回的响应消息
+        response["uid"] = user.getId();
+        response["username"] = user.getName();
 
         //（5）查询该用户的好友列表 并封装成json格式 进行返回
         vector<User> friends = _friendModel.query(uid);
@@ -225,11 +228,11 @@ void ChatService::reset() {
 }
 
 //单聊
-void ChatService::singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     //lch登录 {"msgId":1,"uid":28,"password":"123456"}
     //zhangsan登录 {"msgId":1,"uid":13,"password":"123456"}
-    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "username":"zhangsan", "to":28, "msg":"today is a good day"}
-    //zhangsan给lch发送消息 {"msg_id":5, "from":13, "username":"zhangsan", "to":28, "msg":"i want to go out for a walk."}
+    //zhangsan给lch发送消息 {"msgId":5, "from":13, "username":"zhangsan", "to":28, "msg":"today is a good day"}
+    //zhangsan给lch发送消息 {"msgId":5, "from":13, "username":"zhangsan", "to":28, "msg":"i want to go out for a walk."}
     
     int to = js["to"].get<int>();
     {   

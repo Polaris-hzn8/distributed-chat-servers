@@ -42,7 +42,7 @@ public:
 	void reset();
 
 	//7.单聊
-	void singleChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
+	void chat(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//8.添加好友
 	void addFriend(const TcpConnectionPtr &conn, json &js, Timestamp time);
 	//9.删除好友

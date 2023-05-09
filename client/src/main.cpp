@@ -6,7 +6,7 @@
 ************************************************************************/
 
 #include "head.h"
-#include "menu.h"
+#include "sys.h"
 #include "common.h"
 #include "data.h"
 #include "Group.h"
@@ -92,59 +92,12 @@ int main(int argc, char *argv[]) {
                             string errmsg = response["errmsg"]; 
                             cerr << errmsg << endl;
                         } else {
-                            /* 登录成功 初始化本地数据 */
-                            /* 记录登录用户的uid与username */
-                            string sysmsg = response["sysmsg"];
-                            cout << sysmsg << endl;
-                            userInfo_g.setId(response["uid"].get<int>());
-                            userInfo_g.setName(response["username"]);
-
-                            /* 记录当前用户的好友列表信息 */
-                            if (response.contains("friends")) {
-                                vector<string> friends = response["friends"];
-                                for (string friend_s : friends) {
-                                    json friend_j = json::parse(friend_s);
-                                    User friend_;
-                                    friend_.setId(friend_j["uid"]);
-                                    friend_.setName(friend_j["username"]);
-                                    friend_.setState(friend_j["state"]);
-                                    friendList_g.push_back(friend_);
-                                }
-                            }
-
-                            /* 记录当前用户的群组列表信息 */
-                            if (response.contains("groups")) {
-                                vector<string> groups = response["groups"];
-                                for (string group_s : groups) {
-                                    json group_j = json::parse(group_s);
-                                    Group group_;
-                                    group_.setId(group_j["gid"]);
-                                    group_.setName(group_j["groupname"]);
-                                    group_.setDesc(group_j["groupdesc"]);
-
-                                    vector<string> groupusers = response["groupusers"];
-                                    for (string groupuser_s : groupusers) {
-                                        json groupuser_j = json::parse(groupuser_s);
-                                        GroupUser groupuser_;
-                                        groupuser_.setId(groupuser_j["uid"]);
-                                        groupuser_.setName(groupuser_j["username"]);
-                                        groupuser_.setState(groupuser_j["state"]);
-                                        groupuser_.setRole(groupuser_j["grouprole"]);
-
-                                        vector<GroupUser> groupusers_;
-                                        groupusers_.push_back(groupuser_);
-                                    }
-
-                                    groupList_g.push_back(group_);
-                                }
-                            }
-
+                            /* 登录成功 初始化本地数据 并打印账户信息 */
+                            accountRefresh(response);
                             /* 显示当前登录用户的基本信息 */
-                            cout << userInfo_g.getName() << " login success, userid is " << userInfo_g.getId() << "." << endl;
                             showAccountInfo();
-
                             /* 显示当前用户的离线消息（私聊离线信息 & 群组离线消息） */
-                            if (response.contains("offlinemsg")) {
+                            if (response.contains("offlinemsgs")) {
                                 printf("You have offlinemsg from your friends!~");
                                 vector<string> offlinemsgs = response["offlinemsg"];
                                 for (string offlinemsg_s : offlinemsgs) {
@@ -153,7 +106,7 @@ int main(int argc, char *argv[]) {
                                     string username = offlinemsg_j["username"];
                                     string message = offlinemsg_j["msg"];
                                     string time = offlinemsg_j["time"];
-                                    printf("msg from %d-%s in %s:%s\t", uid, username, time.c_str(), message.c_str());
+                                    printf("<%s %d %s> : %s", time.c_str(), uid, username.c_str(), message.c_str());
                                 }
                             }
 

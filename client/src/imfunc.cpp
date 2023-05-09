@@ -9,6 +9,7 @@
 #include "common.h"
 #include "imfunc.h"
 #include "data.h"
+#include "sys.h"
 
 //help command handler
 unordered_map<string, string> commandMap = {
@@ -18,67 +19,29 @@ unordered_map<string, string> commandMap = {
 	{"createGroup", "创建群组 <usage> createGroup:groupname:groupdesc"},
 	{"joinGroup", "加入群组 <usage> joinGroup:gid"},
 	{"groupChat", "群聊消息 <usage> groupChat:gid:message"},
-	{"logout", "退出登录 <usage> logout"}
+	{"logout", "退出登录 <usage> logout"},
+    {"refresh", "刷新好友列表与群组列表 <usage> refresh"},
 };
 
 //注册系统支持的客户端命令处理
 unordered_map<string, function<void(int, string)>> commandHandlerMap = {
 	{"help", help},
-	{"singlechat", singlechat},
+	{"chat", chat},
 	{"addFriend", addFriend},
 	{"createGroup", createGroup},
 	{"joinGroup", joinGroup},
 	{"groupChat", groupChat},
-	{"logout", logout}
+	{"logout", logout},
+    {"refresh", refresh}
 };
 
-//获取系统时间
-string getCurrentTime() {
-    auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    struct tm *ptm = localtime(&t);
-    int year = ptm->tm_year + 1900;
-    int month = ptm->tm_mon + 1;
-    int day = ptm->tm_mday;
-    int hour = ptm->tm_hour;
-    int minite = ptm->tm_min;
-    int second = ptm->tm_sec;
-    
-    char content[60] = {0};
-    sprintf(content, "%d-%02d-%02d %02d:%02d:%02d", year, month, day, hour, minite, second);
-    return string(content);
-}
-
-//消息接收线程
-void readTaskHandler(int clientfd) {
-    for (;;) {
-        //1.接收数据
-        char buff[1024] = {0};
-        if (recv(clientfd, buff, 1024, 0) <= 0) {
-            close(clientfd);
-            exit(-1);
-        }
-
-        //2.数据反序列化与分析
-        json js = json::parse(buff);
-        if (js["msgId"].get<int>() == ONE_CHAT_MSG) {
-            /* 单聊消息 */
-            string time = js["time"];
-            int uid = js["uid"];
-            string username = js["username"];
-            string message = js["msg"];
-            printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, message.c_str());
-            continue;
-        }
-    }
-}
-
-void help(int fd, string str) {
+void help(int clientfd, string str) {
     cout << "system command list:" << endl;
     for (auto command : commandMap) cout << command.first << " : " << command.second << endl;
     cout << endl;
 }
 
-void singlechat(int clientfd, string str) {
+void chat(int clientfd, string str) {
     //1.str命令验证
     int idx = str.find(":");
     if (idx == -1) {
@@ -101,7 +64,7 @@ void singlechat(int clientfd, string str) {
     string request = js.dump();
 
     int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
-    if (len == -1) cerr << "send singlechat msg failed!~" << request << endl;
+    if (len == -1) cerr << "send chat msg failed!~" << request << endl;
 }
 
 void addFriend(int clientfd, string str) {
@@ -113,7 +76,29 @@ void addFriend(int clientfd, string str) {
     string request = js.dump();
 
     int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
-    if (len == -1) cerr << "send singchat msg falied!~" << request << endl;
+    if (len == -1) cerr << "send chat msg falied!~" << request << endl;
+}
+
+void refresh(int clientfd, string str) {
+    //1.发送用户数据刷新请求
+    json js;
+    js["msgId"] = ACOUNT_FRESH_MSG;
+    js["uid"] = userInfo_g.getId();
+    string request = js.dump();
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send refresh request falied!~" << request << endl;
+
+    //2.接受客户端发送的response
+    /* 接受json response 数据 */
+    char buff[1024] = {0};
+    if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv refresh response error!~" << request << endl;
+    else {
+        json response = json::parse(buff);
+        accountRefresh(response);
+        showAccountInfo();
+        return;
+    }
+    cout << "account refresh error please check your network." << endl;
 }
 
 void createGroup(int, string) {
