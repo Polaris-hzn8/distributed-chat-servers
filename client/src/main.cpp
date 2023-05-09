@@ -109,33 +109,47 @@ void login(int clientfd) {
     if (len == -1) cerr << "send login request error!~" << request << endl;
     else {
         //3.接受json response 数据
-        char buff[1024] = {0};
-        if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv login response error!~" << request << endl;
+        char buff[4096] = {0};
+        if ((recv(clientfd, buff, 4096, 0)) == -1) cerr << "recv login response error!~" << request << endl;
         else {
             //4.json数据处理
             json response = json::parse(buff);
+            cout << response << endl;
             if (response["errno"].get<int>() != 0) {
                 //4-1 登录信息有误 打印服务器返回的异常信息
                 string errmsg = response["errmsg"]; 
                 cerr << errmsg << endl;
             } else {
-                //4-2 登录成功 初始化本地数据 并打印账户信息
+                //4-2 登录成功 初始化本地数据
                 accountRefresh(response);
                 //4-3 显示当前登录用户的基本信息
                 showAccountInfo();
                 //4-4 显示当前用户的离线消息（私聊离线信息 & 群组离线消息）
                 if (response.contains("offlinemsgs")) {
-                    printf("You have offlinemsgs from your friends!~\n");
+                    printf("You have offlinemsgs from your friends or Groups!~\n");
                     vector<string> offlinemsgs = response["offlinemsgs"];
                     for (string offlinemsg_s : offlinemsgs) {
                         json offlinemsg_j = json::parse(offlinemsg_s);
-                        int uid = offlinemsg_j["from"];
-                        string username = offlinemsg_j["username"];
-                        string message = offlinemsg_j["msg"];
-                        string time = offlinemsg_j["time"];
-                        printf("<%s %d %s> : %s\n", time.c_str(), uid, username.c_str(), message.c_str());
+                        int msgId = offlinemsg_j["msgId"].get<int>();
+                        if (msgId == ONE_CHAT_MSG) {
+                            /* 客户端收到好友的单聊离线消息 */
+                            int fid = offlinemsg_j["from"].get<int>();
+                            string time = offlinemsg_j["time"];
+                            string username = offlinemsg_j["username"];
+                            string message = offlinemsg_j["msg"];
+                            printf("<%s %d %s> : %s\n", time.c_str(), fid, username.c_str(), message.c_str());
+                        } else if (msgId == GROUP_CHAT_MSG) {
+                            /* 客户单收到群聊离线消息 */
+                            int gid = offlinemsg_j["gid"].get<int>();
+                            int uid = offlinemsg_j["uid"].get<int>();
+                            string username = offlinemsg_j["username"];
+                            string message = offlinemsg_j["msg"];
+                            string time = offlinemsg_j["time"];
+                            printf("<Group:%d><%s %d %s> : %s\n", gid, time.c_str(), uid, username.c_str(), message.c_str());
+                        }
                     }
                 }
+
 
                 //4-5 启动客户端消息接受线程 不停的接受来自服务端的所有数据
                 /* pthread_create & pthread_detach */

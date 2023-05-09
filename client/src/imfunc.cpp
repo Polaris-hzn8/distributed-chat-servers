@@ -37,8 +37,8 @@ unordered_map<string, function<void(int, string)>> commandHandlerMap = {
 
 //<usage> help
 void help(int clientfd, string str) {
-    cout << "system command list:" << endl;
-    for (auto command : commandMap) cout << command.first << " : " << command.second << endl;
+    cout << ">>> system command list:" << endl;
+    for (auto command : commandMap) cout << "  " << command.first << " : " << command.second << endl;
     cout << endl;
 }
 
@@ -142,8 +142,29 @@ void joinGroup(int clientfd, string str) {
 }
 
 //<usage> groupChat:gid:message
-void groupChat(int, string) {
+void groupChat(int clientfd, string str) {
+    int idx = str.find(":");
+    if (idx == -1) {
+        cerr << "groupChat command invalid!~" << endl;
+        return;
+    }
+    //1.获取参数
+    string gid_s = str.substr(0, idx);
+    int gid = atoi(gid_s.c_str());
+    string message = str.substr(idx + 1, str.size() - idx);
 
+    //2.组装json字符串
+    json js;
+    js["msgId"] = GROUP_CHAT_MSG;
+    js["uid"] = userInfo_g.getId();
+    js["username"] = userInfo_g.getName();
+    js["gid"] = gid;
+    js["msg"] = message;
+    js["time"] = getCurrentTime();
+    string request = js.dump();
+
+    int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
+    if (len == -1) cerr << "send group chat msg falied!~" << request << endl;
 }
 
 //<usage> logout

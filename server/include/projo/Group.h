@@ -19,7 +19,7 @@ public:
         this->groupdesc = groupdesc;
     }
 
-    void setId(int groupid) { this->gid = gid; }
+    void setId(int gid) { this->gid = gid; }
     void setName(string groupname) { this->groupname = groupname; }
     void setDesc(string groupdesc) { this->groupdesc = groupdesc; }
     

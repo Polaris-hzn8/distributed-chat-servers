@@ -330,15 +330,15 @@ void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp ti
 
 //创建群组
 void ChatService::createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    int userid = js["uid"].get<int>();
+    int uid = js["uid"].get<int>();
     string groupname = js["groupname"];
     string groupdesc = js["groupdesc"];
 
     //存储新创建的群组信息
     Group group(-1, groupname, groupdesc);
     if (_groupModel.createGroup(group)) {
-        //存储群成员信息
-        _groupModel.joinGroup(userid, group.getId(), "creator");
+        //将创建者加入群组中
+        _groupModel.joinGroup(uid, group.getId(), "creator");
     }
 }
 

@@ -44,20 +44,28 @@ void readTaskHandler(int clientfd) {
         json js = json::parse(buff);
         int msgId = js["msgId"].get<int>();
         if (msgId == ONE_CHAT_MSG) {
-            /* 收到好友的单聊消息 */
+            /* 客户端收到好友的单聊消息 */
             int fid = js["from"].get<int>();
             string time = js["time"];
             string username = js["username"];
             string message = js["msg"];
 
 			printf("<%s %d %s> : %s\n", time.c_str(), fid, username.c_str(), message.c_str());
-            continue;
-        }
+        } else if (msgId == GROUP_CHAT_MSG) {
+			/* 客户单收到群聊消息 */
+			int gid = js["gid"].get<int>();
+			int uid = js["uid"].get<int>();
+			string username = js["username"];
+			string message = js["msg"];
+            string time = js["time"];
+			printf("<Group:%d><%s %d %s> : %s\n", gid, time.c_str(), uid, username.c_str(), message.c_str());
+		}
     }
 }
 
 //更新本地文件信息
 void accountRefresh(json &response) {
+	//cout << response << endl;
 	memset(&userInfo_g, 0, sizeof(userInfo_g));
 	friendList_g.clear();
 	groupList_g.clear();
@@ -90,8 +98,9 @@ void accountRefresh(json &response) {
 			group_.setId(group_j["gid"]);
 			group_.setName(group_j["groupname"]);
 			group_.setDesc(group_j["groupdesc"]);
-
-			vector<string> groupusers = response["groupusers"];
+			
+			vector<GroupUser> groupusers_;
+			vector<string> groupusers = group_j["groupusers"];
 			for (string groupuser_s : groupusers) {
 				json groupuser_j = json::parse(groupuser_s);
 				GroupUser groupuser_;
@@ -100,10 +109,8 @@ void accountRefresh(json &response) {
 				groupuser_.setState(groupuser_j["state"]);
 				groupuser_.setRole(groupuser_j["grouprole"]);
 
-				vector<GroupUser> groupusers_;
-				groupusers_.push_back(groupuser_);
+				group_.getGroupUsers().push_back(groupuser_);
 			}
-
 			groupList_g.push_back(group_);
 		}
 	}
@@ -130,7 +137,7 @@ void showAccountInfo() {
 		for (Group group : groupList_g) {
 			printf("gid:%d\tgroupname:%s\tgroupdesc:%s\n", group.getId(), group.getName().c_str(), group.getDesc().c_str());
 			for (GroupUser groupuser : group.getGroupUsers()) {
-				printf("uid:%d\tusername:%s\tgrouprole%s\tstate:%s\n", 
+				printf("  uid:%d\tusername:%s\tgrouprole:%s\tstate:%s\n", 
 					groupuser.getId(), 
 					groupuser.getName().c_str(), 
 					groupuser.getRole().c_str(), 
