@@ -20,9 +20,9 @@ vector<User> friendList_g;
 vector<Group> groupList_g;
 
 //显示当前登录用户的基本信息
-void showUserInfo();
+void showAccountInfo();
 //主聊天页面程序
-void mainMenu();
+void mainMenu(int clientfd);
 
 //获取系统时间
 string getCurrentTime();
@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
                             /* 显示当前登录用户的基本信息 */
                             cout << userInfo_g.getName() << " login success, userid is " << userInfo_g.getId() << "." << endl;
-                            showUserInfo();
+                            showAccountInfo();
 
                             /* 显示当前用户的离线消息（私聊离线信息 & 群组离线消息） */
                             if (response.contains("offlinemsg")) {
@@ -168,18 +168,19 @@ int main(int argc, char *argv[]) {
                                     json offlinemsg_j = json::parse(offlinemsg_s);
                                     int uid = offlinemsg_j["uid"];
                                     string username = offlinemsg_j["username"];
-                                    string msg = offlinemsg_j["msg"];
+                                    string message = offlinemsg_j["msg"];
                                     string time = offlinemsg_j["time"];
-                                    printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, msg.c_str());
+                                    printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, message.c_str());
                                 }
                             }
 
                             /* 启动客户端消息接受线程 不停的接受来自服务端的所有数据 */
+                            /* pthread_create & pthread_detach */
                             thread readTask(readTaskHandler, clientfd);//创建线程用于服务器消息接受
                             readTask.detach();//设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
 
                             /* 进入聊天主菜单页面 用户可以开始进行各种业务操作 */
-                            mainMenu();
+                            mainMenu(clientfd);
 
                         }
                     }
@@ -242,17 +243,6 @@ int main(int argc, char *argv[]) {
     return 0;
 }
 
-
-//显示当前登录用户的基本信息
-void showUserInfo() {
-
-}
-
-//主聊天页面程序
-void mainMenu() {
-
-}
-
 //获取系统时间
 string getCurrentTime() {
 
@@ -260,11 +250,44 @@ string getCurrentTime() {
 
 //消息接收线程
 void readTaskHandler(int clientfd) {
+    for (;;) {
+        //1.接收数据
+        char buff[1024] = {0};
+        if (recv(clientfd, buff, 1024, 0) <= 0) {
+            close(clientfd);
+            exit(-1);
+        }
 
+        //2.数据反序列化与分析
+        json js = json::parse(buff);
+        if (js["msgId"].get<int>() == ONE_CHAT_MSG) {
+            /* 单聊消息 */
+            string time = js["time"];
+            int uid = js["uid"];
+            string username = js["username"];
+            string message = js["msg"];
+            printf("<%s-%s-%d> : %s", time.c_str(), username.c_str(), uid, message.c_str());
+            continue;
+        }
+    }
 }
 
 //消息接收线程
 void writeTaskHandler(int clientfd) {
+
+}
+
+
+//显示当前登录用户的基本信息
+void showAccountInfo() {
+
+}
+
+//主聊天页面程序
+void mainMenu(int clientfd) {
+
+
+
 
 }
 
