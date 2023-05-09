@@ -11,4 +11,7 @@
 //主聊天页面程序
 void mainMenu(int clientfd);
 
+//显示当前登录用户的基本信息
+void showAccountInfo();
+
 #endif
