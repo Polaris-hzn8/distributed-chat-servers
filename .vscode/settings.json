@@ -53,7 +53,13 @@
         "typeinfo": "cpp",
         "valarray": "cpp",
         "ctime": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "random": "cpp",
+        "ratio": "cpp",
+        "mutex": "cpp",
+        "thread": "cpp"
     },
     "cmake.sourceDirectory": "/home/luochenhao/3.project/2.distributed-chat-server",
 }
