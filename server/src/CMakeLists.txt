@@ -3,9 +3,10 @@ aux_source_directory(. SRC_LIST)
 aux_source_directory(./db DB_LIST)
 aux_source_directory(./model DAO_LIST)
 aux_source_directory(./service SERVICE_LIST)
+aux_source_directory(./utils UTILS_LIST)
 
 # 2.编译后的可执行文件名
-add_executable(myServer ${SRC_LIST} ${DB_LIST} ${DAO_LIST} ${SERVICE_LIST})
+add_executable(myServer ${SRC_LIST} ${DB_LIST} ${DAO_LIST} ${SERVICE_LIST} ${UTILS_LIST})
 
 # 3.需要包含的头文件
 include_directories(${PROJECT_SOURCE_DIR}/server/include)

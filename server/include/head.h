@@ -14,6 +14,7 @@
 #include <muduo/base/Logging.h>
 #include <functional>
 #include <unordered_map>
+#include <sys/file.h>
 #include <string>
 #include <vector>
 #include <memory>

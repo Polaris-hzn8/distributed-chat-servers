@@ -6,12 +6,7 @@
 ************************************************************************/
 
 #include "db.h"
-
-//数据库信息配置
-static string dbserverip = "192.168.172.133";
-static string dbusername = "root";
-static string dbpassword = "20001201";
-static string dbname = "chat";
+#include "read.h"
 
 //1.初始化数据库连接
 Mysql::Mysql() {
@@ -25,7 +20,7 @@ Mysql::~Mysql() {
 
 //3.连接数据库
 bool Mysql::connect() {
-    MYSQL *p = mysql_real_connect(_conn, dbserverip.c_str(), dbusername.c_str(), dbpassword.c_str(), dbname.c_str(), 3306, nullptr, 0);
+    MYSQL *p = mysql_real_connect(_conn, dbip, dbusername, dbpassword, dbname, dbport, nullptr, 0);
     if (p != nullptr) {
         //C与C++代码默认的编码字符是ASCII set names gbk设置支持中文
         mysql_query(_conn, "set names gbk");
