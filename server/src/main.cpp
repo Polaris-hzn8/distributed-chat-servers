@@ -25,7 +25,7 @@ int main() {
 
     //2.创建ChatServer对象
     EventLoop loop;//epoll
-    InetAddress add("192.168.172.133", 20000);
+    InetAddress add(ip, port);
     ChatServer server(&loop, add, "myChatServer");
 
     //3.启动ChatServer服务器
