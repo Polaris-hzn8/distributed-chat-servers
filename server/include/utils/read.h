@@ -14,12 +14,16 @@
 extern int port;
 extern char ip[50];
 
-//数据库信息配置
+//mysql数据库信息配置
 extern char dbip[50];
 extern int dbport;
 extern char dbusername[100];
 extern char dbpassword[100];
 extern char dbname[100];
+
+//redis消息队列配置
+extern char redisip[50];
+extern int redisport;
 
 void initConfig(const char *configpath);
 

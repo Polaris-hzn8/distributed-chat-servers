@@ -19,7 +19,7 @@ include_directories(${PROJECT_SOURCE_DIR}/server/include/utils)
 include_directories(${PROJECT_SOURCE_DIR}/server/include/redis)
 
 # 4.需要链接的库
-target_link_libraries(myServer muduo_net muduo_base mysqlclient pthread)
+target_link_libraries(myServer muduo_net muduo_base mysqlclient hiredis pthread)
 
 
 

@@ -22,6 +22,9 @@
 #include <signal.h>
 #include "json.hpp"
 
+#include <hiredis/hiredis.h>
+#include <thread>
+
 using namespace std;
 using namespace muduo;
 using namespace muduo::net;
