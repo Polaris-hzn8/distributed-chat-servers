@@ -7,7 +7,8 @@
 stream {
     upstream ChatServer {
         server 192.168.172.133:20000 weight=1 max_fails=3 fail_timeout=30s;
-        server 192.168.172.134:20000 weight=1 max_fails=3 fail_timeout=30s;
+        server 192.168.172.137:20000 weight=1 max_fails=3 fail_timeout=30s;
+        server 192.168.172.138:20000 weight=1 max_fails=3 fail_timeout=30s;
     }
     
     server {
