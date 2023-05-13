@@ -17,6 +17,7 @@
 #include "OffMessageModel.h"
 #include "FriendModel.h"
 #include "GroupModel.h"
+#include "redis.h"
 
 //采用单例模式
 //将消息id msg_id 与事件TcpConnectionPtr &conn 进行绑定
@@ -64,6 +65,9 @@ public:
 	//群聊
 	void groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time);
 
+	//从redis消息队列中获取订阅的消息 redis回调函数
+	void handleRedisSubscribeMessage(int uid, string msg);
+
 private:
 	//单例模式
 	ChatService();
@@ -80,6 +84,9 @@ private:
 	OffMessageModel _offMessageModel;
 	FriendModel _friendModel;
 	GroupModel _groupModel;
+
+	//redis操作对象
+	Redis _redis;
 };
 
 #endif

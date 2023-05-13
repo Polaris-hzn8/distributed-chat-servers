@@ -36,6 +36,17 @@ ChatService::ChatService() {
     _msgHandlerMap.insert({ADD_GROUP_MSG, bind(&ChatService::joinGroup, this, _1, _2, _3) });//加入群聊
     _msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//发送群消息
 
+    //连接redis服务器
+    if (_redis.connect()) {
+        /* 连接上redis服务器后需要预置一个回调 */
+        /* 因为redis底层会监听通道上的消息 如果需要上报消息 则需要通过这个回调函数（预先注册回调函数） */
+        /* 通过绑定器绑定服务中的方法 this对象及其预留参数 channel_id channel_id->str */
+        
+        //1.bind包装上报消息的方法
+        function<void(int, string)> func = std::bind(&ChatService::handleRedisSubscribeMessage, this, _1, _2);
+        //2.redis设置上报通道消息的回调方法
+        _redis.init_notify_handler(func);
+    }
 }
 
 //获取消息id对应的事件处理器
@@ -143,18 +154,21 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         user.setState("online");
         _userModel.updateState(user);
 
-        //（3）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
+        //（3）用户以uid登录成功后 向redis订阅channel(uid)
+        _redis.subscribe(uid);//消息队列中注册uid
+
+        //（4）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
         vector<string> messages = _offMessageModel.query(uid);
         if (!messages.empty()) {
             response["offlinemsgs"] = messages;//json直接支持容器序列化与反序列化
             _offMessageModel.remove(uid);//读取该用户的离线消息后 将该用户的所有离线消息删除
         }
 
-        //（4）设置返回的响应消息
+        //（5）设置返回的响应消息
         response["uid"] = user.getId();
         response["username"] = user.getName();
 
-        //（5）查询该用户的好友列表 并封装成json格式 进行返回
+        //（6）查询该用户的好友列表 并封装成json格式 进行返回
         vector<User> friends = _friendModel.query(uid);
         if (!friends.empty()) {
             vector<string> friends_t;
@@ -168,7 +182,7 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             response["friends"] = friends_t;
         }
 
-        //（6）查询登录用户的群组列表 并封装成json格式 进行返回
+        //（7）查询登录用户的群组列表 并封装成json格式 进行返回
         vector<Group> groups = _groupModel.queryGroups(uid);
         if (!groups.empty()) {
             //封装群组信息
@@ -256,7 +270,7 @@ void ChatService::sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timesta
     conn->send(response.dump());
 }
 
-//处理客户端异常退出
+//处理客户端正常退出
 void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     int uid = js["uid"];
     //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
@@ -271,6 +285,9 @@ void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp 
     User user;
     user.setState("offline");
     _userModel.updateState(user);
+
+    //3.redis消息队列中取消订阅
+    _redis.unsubscribe(uid);
 }
 
 //处理客户端异常退出
@@ -289,11 +306,15 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
         }
     }
 
+    int uid = user.getId();
     //2.需要更新用户状态信息
-    if (user.getId() != -1) {
+    if (uid != -1) {
         user.setState("offline");
         _userModel.updateState(user);
     }
+
+    //3.redis消息队列中取消订阅
+    _redis.unsubscribe(uid);
 }
 
 //处理服务器异常退出
@@ -321,7 +342,7 @@ void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
             如果用户在线需要 使用在线用户的conn 在使用conn的时候有可能会在其他地方被删除（加入临界区保证conn不能被删除）
          */
 
-        //3.目标用户在线进行消息发送 
+        //3.目标用户如果在本台服务器上在线 则直接进行消息发送 
         if (it != _userConnMap.end()) {
             //单聊目标在线 服务器直接转发消息给to用户
             TcpConnectionPtr tcpconnptr = it->second;
@@ -329,8 +350,15 @@ void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
             return;
         }
     }
+
+    //4.目标用户如果在其他服务器上在线 则直接进行消息发送（将消息发送到redis消息队列上 由redis消息队列转发给对应用户）
+    User user = _userModel.query(to);
+    if (user.getState() == "online") {
+        _redis.publish(to, js.dump());//将消息发布到redis的channel_id(to)通道上 == 事件上报
+        return;
+    }
     
-    //4.单聊目标不在线 直接存储离线消息
+    //5.单聊目标 在所有的服务器上都不在线 直接存储离线消息
     _offMessageModel.insert(to, js.dump());
 }
 
@@ -374,19 +402,38 @@ void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp ti
     int gid = js["gid"].get<int>();
     
     //2.根据群用户不同在线状态 进行发送群消息 or 存储离线消息
-    vector<int> uids = _groupModel.queryGroupUsers(uid, gid);
+    vector<int> guids = _groupModel.queryGroupUsers(uid, gid);
     /* c++中的map不是线程安全的map */
     lock_guard<mutex> lock(_connMutex);
-    for (int uid : uids) {
-        auto it  = _userConnMap.find(uid);
+    for (int guid : guids) {
+        auto it  = _userConnMap.find(guid);
         if (it != _userConnMap.end()) {
-            //用户处于在线状态
+            // case1 : 用户与好友处于同一台服务器上 并且好友处于在线状态 直接转发消息
             it->second->send(js.dump());
         } else {
-            //用户处于离线状态
-            _offMessageModel.insert(uid, js.dump());
+            /* 目标用户在本台服务器上的_connMap中没有发现 */
+            User user = _userModel.query(guid);
+            if (user.getState() == "online") {
+                // case2 : 用于处于不同服务器上 并且好友处于在线状态 通过redis消息队列向其他服务器发送消息
+                _redis.publish(guid, js.dump());
+            } else {
+                // case3 : 用户的好友处于离线状态
+                _offMessageModel.insert(uid, js.dump());
+            }
         }
     }
 }
 
+
+//redis调用的回调函数
+void ChatService::handleRedisSubscribeMessage(int uid, string msg) {
+    /* 消息会被redis转发到uid所在的服务器上 */
+    lock_guard<mutex> lock(_connMutex);
+    auto it = _userConnMap.find(uid);
+    if (it != _userConnMap.end()) {
+        it->second->send(msg);
+        return;
+    }
+    _offMessageModel.insert(uid, msg);
+}
 
