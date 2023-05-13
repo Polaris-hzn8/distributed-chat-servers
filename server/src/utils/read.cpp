@@ -19,6 +19,10 @@ char dbusername[100];
 char dbpassword[100];
 char dbname[100];
 
+//redis消息队列配置
+char redisip[50];
+int redisport;
+
 
 char ans[512];
 
@@ -29,6 +33,7 @@ void initConfig(const char *configpath) {
     }
 
     char *info;
+    //1.chatServer config read
     info = get_conf_value(configpath, "IP");
     if (info == NULL) {
         LOG_INFO << "IP is not setted in configfile";
@@ -45,6 +50,7 @@ void initConfig(const char *configpath) {
         port = atoi(info);
     }
 
+    //2.dbServer config read
     info = get_conf_value(configpath, "DBIP");
     if (info == NULL) {
         LOG_INFO << "DBIP is not setted in configfile";
@@ -85,8 +91,28 @@ void initConfig(const char *configpath) {
         sprintf(dbname,"%s",info);
     }
 
-    printf("configfile read complete, serverip:%s, serverport:%d, dbip:%s, dbport:%d, dbusername:%s, dbpassword:%s, dbname:%s\n", 
-    ip, port, dbip, dbport, dbusername, dbpassword, dbname);
+    //2.redisServer config read
+    info = get_conf_value(configpath, "REDISIP");
+    if (info == NULL) {
+        LOG_INFO << "REDISIP is not setted in configfile";
+        exit(1);
+    } else {
+        sprintf(redisip,"%s",info);
+    }
+
+    info = get_conf_value(configpath, "REDISPORT");
+    if (info == NULL) {
+        LOG_INFO << "REDISPORT is not setted in configfile";
+        exit(1);
+    } else {
+        redisport = atoi(info);
+    }
+
+    printf("configfile read start...\n");
+    printf("read chatServer config, serverip:%s, serverport:%d\n", ip, port);
+    printf("read dbserver config, dbip:%s, dbport:%d, dbusername:%s, dbpassword:%s, dbname:%s\n", dbip, dbport, dbusername, dbpassword, dbname);
+    printf("read redisServer config, redisip:%s, redisport:%d\n", redisip, redisport);
+    printf("configfile read  complete.\n");
 }
 
 char *get_conf_value(const char *filename, const char *key) {
