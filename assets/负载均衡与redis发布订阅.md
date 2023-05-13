@@ -86,25 +86,115 @@ redis提供的功能，
 5. redis接受到通道中的消息后，能够向客户端上报消息（观察者模式）
 6. 需要实现注册一个回调，当通道上有消息发生的时候redis才能回调（通知客户端感兴趣的通道的消息发生了）
 
+### 3.redis消息队列通信流程具体分析
+
+- step1：在构造函数中连接redis服务器，连接成功后注册回调函数（便于redis检测到通道消息后进行消息上报）
+
+```cpp
+//将消息id 以及对应的Handler回调操作 初始化写入_msgHandlerMap中
+ChatService::ChatService() {
+    //unordered_map<int, MsgHandler> _msgHandlerMap;//存储消息id 及其对应的事件处理方法表
+    //相应的消息id 及其 与对应的事件回调处理函数 做一个绑定
+    _msgHandlerMap.insert({LOGIN_MSG, bind(&ChatService::login, this, _1, _2, _3) });//登录
+    _msgHandlerMap.insert({REG_MSG, bind(&ChatService::regis, this, _1, _2, _3) });//注册
+    _msgHandlerMap.insert({ACOUNT_FRESH_MSG, bind(&ChatService::sendNewestInfo, this, _1, _2, _3) });//更新客户端数据
+    _msgHandlerMap.insert({LOGOUT_MSG, bind(&ChatService::clientClose, this, _1, _2, _3) });//更新客户端数据
+
+    _msgHandlerMap.insert({ONE_CHAT_MSG, bind(&ChatService::chat, this, _1, _2, _3) });//单聊
+    _msgHandlerMap.insert({ADD_FRIEND_MSG, bind(&ChatService::addFriend, this, _1, _2, _3) });//添加好友
+
+    _msgHandlerMap.insert({CREATE_GROUP_MSG, bind(&ChatService::createGroup, this, _1, _2, _3) });//创建群聊
+    _msgHandlerMap.insert({ADD_GROUP_MSG, bind(&ChatService::joinGroup, this, _1, _2, _3) });//加入群聊
+    _msgHandlerMap.insert({GROUP_CHAT_MSG, bind(&ChatService::groupChat, this, _1, _2, _3) });//发送群消息
+
+    //连接redis服务器
+    if (_redis.connect()) {
+        /* 连接上redis服务器后需要预置一个回调 */
+        /* 因为redis底层会监听通道上的消息 如果需要上报消息 则需要通过这个回调函数（预先注册回调函数） */
+        /* 通过绑定器绑定服务中的方法 this对象及其预留参数 channel_id channel_id->str */
+        
+        //1.bind包装上报消息的方法
+        function<void(int, string)> func = std::bind(&ChatService::handleRedisSubscribeMessage, this, _1, _2);
+        //2.redis设置上报通道消息的回调方法
+        _redis.init_notify_handler(func);
+    }
+}
+```
+
+- step2：客户端login登录成功后，需要向redis服务器订阅通道（以uid订阅通道）
+
+```cpp
+//（3）用户以uid登录成功后 向redis订阅channel(uid)
+_redis.subscribe(uid);//消息队列中注册uid
+```
+
+- step3：客户单logout登出后，需要向redis服务器取消订阅的通道（以uid取消订阅通道）
+
+```cpp
+//3.redis消息队列中取消订阅
+_redis.unsubscribe(uid);
+```
+
+- step4：客户端异常断开连接后，需要向redis服务器取消订阅的通道（以uid取消订阅通道）
 
 
+```cpp
+//3.redis消息队列中取消订阅
+_redis.unsubscribe(uid);
+```
 
+- step5：客户单发送单聊请求消息，好友与用户不在同一台服务器，需要redis消息队列转发到好友所在服务器上
 
+```cpp
+//4.目标用户如果在其他服务器上在线 则直接进行消息发送（将消息发送到redis消息队列上 由redis消息队列转发给对应用户）
+User user = _userModel.query(to);
+if (user.getState() == "online") {
+    _redis.publish(to, js.dump());//将消息发布到redis的channel_id(to)通道上 == 事件上报
+    return;
+}
+```
 
+- step6：客户单发送群聊请求消息，群聊中的用户与发送用户不在同一台服务器，需要redis消息队列转发消息到群友所在服务器上
 
+```cpp
+//2.根据群用户不同在线状态 进行发送群消息 or 存储离线消息
+vector<int> guids = _groupModel.queryGroupUsers(uid, gid);
+/* c++中的map不是线程安全的map */
+lock_guard<mutex> lock(_connMutex);
+for (int guid : guids) {
+    auto it  = _userConnMap.find(guid);
+    if (it != _userConnMap.end()) {
+        // case1 : 用户与好友处于同一台服务器上 并且好友处于在线状态 直接转发消息
+        it->second->send(js.dump());
+    } else {
+        /* 目标用户在本台服务器上的_connMap中没有发现 */
+        User user = _userModel.query(guid);
+        if (user.getState() == "online") {
+            // case2 : 用于处于不同服务器上 并且好友处于在线状态 通过redis消息队列向其他服务器发送消息
+            _redis.publish(guid, js.dump());
+        } else {
+            // case3 : 用户的好友处于离线状态
+            _offMessageModel.insert(uid, js.dump());
+        }
+    }
+}
+```
 
+- step7：redis从发生消息的通道中上报消息到指定的服务器，做消息转发
 
-
-
-
-
-
-
-
-
-
-
-
+```cpp
+//redis调用的回调函数
+void ChatService::handleRedisSubscribeMessage(int uid, string msg) {
+    /* 消息会被redis转发到uid所在的服务器上 */
+    lock_guard<mutex> lock(_connMutex);
+    auto it = _userConnMap.find(uid);
+    if (it != _userConnMap.end()) {
+        it->second->send(msg);
+        return;
+    }
+    _offMessageModel.insert(uid, msg);
+}
+```
 
 
 
