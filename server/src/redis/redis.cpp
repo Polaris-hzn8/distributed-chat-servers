@@ -42,6 +42,7 @@ bool Redis::connect() {
 
 //向redis指定的通道channel发布消息
 bool Redis::publish(int channel, string message) {
+    LOG_INFO << "[to redis] publish msg to redis-server in channel:" << channel;
     //发布消息
     redisReply *reply = (redisReply *)redisCommand(_publish_context, "PUBLISH %d %s", channel, message.c_str());
     if (reply == nullptr) {
@@ -66,7 +67,7 @@ bool Redis::publish(int channel, string message) {
 
 //向redis指定的通道subscribe订阅消息
 bool Redis::subscribe(int channel) {
-    LOG_INFO << "[to redis] subscribe redis mq channel";
+    LOG_INFO << "[to redis] subscribe redis mq channel:" << channel;
     //订阅消息 只订阅通道 不接受通道的消息 通道消息的接受专门会在observser_channel_message函数中的独立线程中进行
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源
     if (redisAppendCommand((this->_subscribe_context), "SUBSCRIBE %d", channel) == REDIS_ERR) {
@@ -89,7 +90,7 @@ bool Redis::subscribe(int channel) {
 
 //向redis指定的通道unsubscribe取消订阅消息
 bool Redis::unsubscribe(int channel) {
-    LOG_INFO << "[to redis] unsubscribe redis mq channel";
+    LOG_INFO << "[to redis] unsubscribe redis mq channel" << channel;
     //取消订阅消息
     //取消订阅消息 只取消订阅通道 不接受通道的消息
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源

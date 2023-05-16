@@ -115,7 +115,6 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
     // {"msgId":1,"uid":28,"password":"123456"}
     
     //1.从Json中获取客户端发来的信息
-    LOG_INFO << "do login service!";
     cout << js << endl;
     int uid = js["uid"].get<int>();
     string password = js["password"];
@@ -444,14 +443,16 @@ void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp ti
 
 
 //redis调用的回调函数
+//从redis消息队列中获取订阅的消息
 void ChatService::handleRedisSubscribeMessage(int uid, string msg) {
     /* 消息会被redis转发到uid所在的服务器上 */
     lock_guard<mutex> lock(_connMutex);
     auto it = _userConnMap.find(uid);
     if (it != _userConnMap.end()) {
+        LOG_INFO << "do handle redis subscribe message service! channel msg happened.";
         it->second->send(msg);
         return;
     }
-    _offMessageModel.insert(uid, msg);
+    _offMessageModel.insert(uid, msg);//如果在订阅通道有消息一瞬间，客户端因为某种原因刚好下线了，只好存储离线消息（非常巧合）
 }
 
