@@ -70,6 +70,7 @@ MsgHandler ChatService::getHandler(int msgId) {
 
 //处理注册业务 name passwd
 void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do regis service";
     // {"msgId":2,"username":"luochenhao","password":"123456"}
     // {"msgId":2,"username":"lch","password":"123456"}
 
@@ -110,6 +111,7 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
 
 //处理登录业务 id password
 void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do login service";
     // {"msgId":1,"uid":28,"password":"123456"}
     
     //1.从Json中获取客户端发来的信息
@@ -142,7 +144,7 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         //（1）登录成功 记录用户的连接信息
         // map会被多个线程调用 需要考虑线程安全问题
         // 锁的粒度一定要小 否则多线程变成一个串行的线程 没有体现并发程序的优势
-        LOG_INFO << "login success!";
+        LOG_INFO << "password and uid correct!";
         response["errno"] = 0;
         response["sysmsg"] = "login success.";
         {
@@ -153,9 +155,11 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
         //（2）需要更新用户状态信息
         user.setState("online");
         _userModel.updateState(user);
+        LOG_INFO << "update the user state!";
 
         //（3）用户以uid登录成功后 向redis订阅channel(uid)
         _redis.subscribe(uid);//消息队列中注册uid
+        LOG_INFO << "subscribe redis channel finished!";
 
         //（4）查询登录的用户是否有离线消息 如果有则从数据库中读取离线消息 并发送给登录用户
         vector<string> messages = _offMessageModel.query(uid);
@@ -163,6 +167,7 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             response["offlinemsgs"] = messages;//json直接支持容器序列化与反序列化
             _offMessageModel.remove(uid);//读取该用户的离线消息后 将该用户的所有离线消息删除
         }
+        LOG_INFO << "query user offlinemsg finished!";
 
         //（5）设置返回的响应消息
         response["uid"] = user.getId();
@@ -181,6 +186,7 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             }
             response["friends"] = friends_t;
         }
+        LOG_INFO << "query user friendList info finished!";
 
         //（7）查询登录用户的群组列表 并封装成json格式 进行返回
         vector<Group> groups = _groupModel.queryGroups(uid);
@@ -208,9 +214,10 @@ void ChatService::login(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             }
             response["groups"] = groups_t;
         }
-        
+        LOG_INFO << "query user groupList info finished!";
     }
     conn->send(response.dump());
+    LOG_INFO << "login service finished!";
 }
 
 
@@ -272,6 +279,7 @@ void ChatService::sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timesta
 
 //处理客户端正常退出
 void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do logout service for client close!";
     int uid = js["uid"];
     //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
     //利用大括号 降低锁的粒度
@@ -292,6 +300,7 @@ void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp 
 
 //处理客户端异常退出
 void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
+    LOG_INFO << "do logout service for client close unexpectedly!";
     User user;
     //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
     //利用大括号 降低锁的粒度
@@ -319,12 +328,14 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
 
 //处理服务器异常退出
 void ChatService::reset() {
+    LOG_INFO << "do reset service for server close!";
     //在服务器退出后 将所有online状态的用户设置为offline
     _userModel.resetState();
 }
 
 //单聊
 void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do chat service!";
     //lch登录 {"msgId":1,"uid":28,"password":"123456"}
     //zhangsan登录 {"msgId":1,"uid":13,"password":"123456"}
     //zhangsan给lch发送消息 {"msgId":5, "from":13, "username":"zhangsan", "to":28, "msg":"today is a good day"}
@@ -345,6 +356,7 @@ void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
         //3.目标用户如果在本台服务器上在线 则直接进行消息发送 
         if (it != _userConnMap.end()) {
             //单聊目标在线 服务器直接转发消息给to用户
+            LOG_INFO << "target user is online within same server!";
             TcpConnectionPtr tcpconnptr = it->second;
             tcpconnptr->send(js.dump());
             return;
@@ -354,17 +366,20 @@ void ChatService::chat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
     //4.目标用户如果在其他服务器上在线 则直接进行消息发送（将消息发送到redis消息队列上 由redis消息队列转发给对应用户）
     User user = _userModel.query(to);
     if (user.getState() == "online") {
+        LOG_INFO << "target user is online in other servers!";
         _redis.publish(to, js.dump());//将消息发布到redis的channel_id(to)通道上 == 事件上报
         return;
     }
     
     //5.单聊目标 在所有的服务器上都不在线 直接存储离线消息
     _offMessageModel.insert(to, js.dump());
+    LOG_INFO << "target user is offline, save the msg in datebase!";
 }
 
 
 //添加好友
 void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do add friend service!";
     //zhangsan给lch发送添加好友的消息 {"msgId":6, "uid":13, "fid":28}
     int uid = js["uid"].get<int>();
     int fid = js["fid"].get<int>();
@@ -375,6 +390,7 @@ void ChatService::addFriend(const TcpConnectionPtr &conn, json &js, Timestamp ti
 
 //创建群组
 void ChatService::createGroup(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do create group service!";
     int uid = js["uid"].get<int>();
     string groupname = js["groupname"];
     string groupdesc = js["groupdesc"];
@@ -389,6 +405,7 @@ void ChatService::createGroup(const TcpConnectionPtr &conn, json &js, Timestamp 
 
 //加入群组
 void ChatService::joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do join group service!";
     int uid = js["uid"].get<int>();
     int gid = js["gid"].get<int>();
     _groupModel.joinGroup(uid, gid, "normal");
@@ -396,6 +413,7 @@ void ChatService::joinGroup(const TcpConnectionPtr &conn, json &js, Timestamp ti
 
 //进行群消息聊天
 void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp time) {
+    LOG_INFO << "do group chat service!";
     // {"uid":xx, "gid":xx, "msg":"xxxx"}
     //1.获取js数据
     int uid = js["uid"].get<int>();
