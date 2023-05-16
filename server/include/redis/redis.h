@@ -28,7 +28,7 @@ public:
 	void observer_channel_message();
 
 	//初始化 向业务层上报通道消息的回调对象（设置回调的公有方法）
-	void init_notify_handler(function<void(int, string)> func);
+	void set_notify_message_handler(function<void(int, string)> func);
 
 private:
 	//redisContext 相当于一个 redis-cli 存储了与客户端相关的所有信息

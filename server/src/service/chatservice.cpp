@@ -45,7 +45,7 @@ ChatService::ChatService() {
         //1.bind包装上报消息的方法
         function<void(int, string)> func = std::bind(&ChatService::handleRedisSubscribeMessage, this, _1, _2);
         //2.redis设置上报通道消息的回调方法
-        _redis.init_notify_handler(func);
+        _redis.set_notify_message_handler(func);//注册回调函数
     }
 }
 
@@ -445,11 +445,11 @@ void ChatService::groupChat(const TcpConnectionPtr &conn, json &js, Timestamp ti
 //redis调用的回调函数
 //从redis消息队列中获取订阅的消息
 void ChatService::handleRedisSubscribeMessage(int uid, string msg) {
+    LOG_INFO << "do handle redis subscribe message service! channel msg happened.";
     /* 消息会被redis转发到uid所在的服务器上 */
     lock_guard<mutex> lock(_connMutex);
     auto it = _userConnMap.find(uid);
     if (it != _userConnMap.end()) {
-        LOG_INFO << "do handle redis subscribe message service! channel msg happened.";
         it->second->send(msg);
         return;
     }
