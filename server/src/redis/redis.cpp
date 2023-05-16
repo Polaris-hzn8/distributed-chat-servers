@@ -36,7 +36,7 @@ bool Redis::connect() {
     //设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
     thread_t.detach();//默认情况下线程都可以被join，detach可以让其不可join
     
-    LOG_INFO << "connect redis-server success!";
+    LOG_INFO << "[to redis] connect redis-server success!";
     return true;
 }
 
@@ -66,6 +66,7 @@ bool Redis::publish(int channel, string message) {
 
 //向redis指定的通道subscribe订阅消息
 bool Redis::subscribe(int channel) {
+    LOG_INFO << "[to redis] subscribe redis mq channel";
     //订阅消息 只订阅通道 不接受通道的消息 通道消息的接受专门会在observser_channel_message函数中的独立线程中进行
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源
     if (redisAppendCommand((this->_subscribe_context), "SUBSCRIBE %d", channel) == REDIS_ERR) {
@@ -88,6 +89,7 @@ bool Redis::subscribe(int channel) {
 
 //向redis指定的通道unsubscribe取消订阅消息
 bool Redis::unsubscribe(int channel) {
+    LOG_INFO << "[to redis] unsubscribe redis mq channel";
     //取消订阅消息
     //取消订阅消息 只取消订阅通道 不接受通道的消息
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源
@@ -133,7 +135,7 @@ void Redis::observer_channel_message() {
         }
         freeReplyObject(reply);
     }
-    LOG_INFO << ">>> observer_channerl_message quit";
+    LOG_INFO << "[to redis] observer_channerl_message quit";
 }
 
 
