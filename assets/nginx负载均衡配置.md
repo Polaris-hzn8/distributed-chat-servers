@@ -6,7 +6,7 @@
 # nginx tcp loadbalance configuration
 stream {
     upstream ChatServer {
-        server 192.168.172.133:20000 weight=1 max_fails=3 fail_timeout=30s;
+        server 192.168.172.134:20000 weight=1 max_fails=3 fail_timeout=30s;
         server 192.168.172.137:20000 weight=1 max_fails=3 fail_timeout=30s;
         server 192.168.172.138:20000 weight=1 max_fails=3 fail_timeout=30s;
     }
@@ -16,7 +16,7 @@ stream {
         #proxy_timeout 3s;
         listen 8001;
         proxy_pass ChatServer;
-        tcp_nopush on;
+        tcp_nodelay on;
     }
 }
 ```

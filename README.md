@@ -97,7 +97,22 @@ Jason开发库、boost + muduo网络库、redis环境、mysql环境
 
 
 
+### 五、运行
 
+运行环境：
+
+1. mysql、mysql-dev环境、source chat.sql
+2. redis、hiredis（可选）
+3. nginx负载均衡配置（可选）
+
+执行命令：
+
+```shell
+mkdir build
+cd build
+cmake ..
+make
+```
 
 
 
