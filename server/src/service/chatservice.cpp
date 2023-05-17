@@ -104,6 +104,7 @@ void ChatService::regis(const TcpConnectionPtr &conn, json &js, Timestamp time) 
             response["errno"] = 0;
             response["sysmsg"] = username + " register success!";
             response["uid"] = user.getId();
+            response["username"] = username;
         }
     }
     conn->send(response.dump());
