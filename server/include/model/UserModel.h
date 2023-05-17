@@ -24,5 +24,4 @@ public:
     bool resetState();
 };
 
-
 #endif // !_USERMODEL_H

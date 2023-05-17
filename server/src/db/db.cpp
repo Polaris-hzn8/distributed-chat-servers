@@ -10,12 +10,12 @@
 
 //1.初始化数据库连接
 Mysql::Mysql() {
-    _conn = mysql_init(nullptr);
+    _conn = mysql_init(nullptr);//开辟内存空间
 }
 
 //2.释放数据库连接资源
 Mysql::~Mysql() {
-    if (_conn != nullptr) mysql_close(_conn);
+    if (_conn != nullptr) mysql_close(_conn);//析构时释放内存空间
 }
 
 //3.连接数据库

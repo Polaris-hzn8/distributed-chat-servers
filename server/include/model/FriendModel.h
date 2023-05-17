@@ -20,5 +20,4 @@ public:
     vector<User> query(int uid);
 };
 
-
 #endif

@@ -55,6 +55,7 @@ MsgHandler ChatService::getHandler(int msgId) {
     //没有查询到结果 进行日志打印 或者直接返回一个空操作的事件处理器
     if (it == _msgHandlerMap.end()) {
         //LOG_ERROR << "msg_id" << msg_id << " can not find handler!";
+        //返回一个默认的处理器 空操作没有对应的handler与当前msgId对应
         return [=](const TcpConnectionPtr &conn, json &js, Timestamp time) {
             LOG_ERROR << "msgId" << msgId << " can not find handler!";
         };
