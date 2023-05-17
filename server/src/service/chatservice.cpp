@@ -278,7 +278,7 @@ void ChatService::sendNewestInfo(const TcpConnectionPtr &conn, json &js, Timesta
 
 //处理客户端正常退出
 void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp time) {
-    LOG_INFO << "do logout service for client close!";
+    LOG_INFO << "do logout service user choose to logout!";
     int uid = js["uid"];
     //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
     //利用大括号 降低锁的粒度
@@ -290,6 +290,7 @@ void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp 
 
     //2.需要更新用户状态信息
     User user;
+    user.setId(uid);
     user.setState("offline");
     _userModel.updateState(user);
 
@@ -299,7 +300,7 @@ void ChatService::clientClose(const TcpConnectionPtr &conn, json &js, Timestamp 
 
 //处理客户端异常退出
 void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
-    LOG_INFO << "do logout service for client close unexpectedly!";
+    LOG_INFO << "do logout service for client close";
     User user;
     //1.循环遍历_userConnMap 找到出现异常的conn将用户的conn信息从HashMap中删除
     //利用大括号 降低锁的粒度
@@ -316,10 +317,8 @@ void ChatService::clientCloseUnexpectedly(const TcpConnectionPtr &conn) {
 
     int uid = user.getId();
     //2.需要更新用户状态信息
-    if (uid != -1) {
-        user.setState("offline");
-        _userModel.updateState(user);
-    }
+    user.setState("offline");
+    _userModel.updateState(user);
 
     //3.redis消息队列中取消订阅
     _redis.unsubscribe(uid);

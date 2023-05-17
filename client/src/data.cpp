@@ -17,7 +17,11 @@ User userInfo_g;
 vector<User> friendList_g;
 //登录用户的群组信息列表
 vector<Group> groupList_g;
+//信号量用于读写线程之间的通信
+sem_t rwsem;
 
-bool isMainMenuRunning = false;
+bool isMainMenuRunning_g = false;
+
+atomic_bool isLoginSuccess_g{false};
 
 

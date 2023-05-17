@@ -30,40 +30,68 @@ string getCurrentTime() {
     return string(content);
 }
 
-//消息接收线程
-void readTaskHandler(int clientfd) {
-    for (;;) {
-        //1.接收数据
-        char buff[1024] = {0};
-        if (recv(clientfd, buff, 1024, 0) <= 0) {
-            close(clientfd);
-            exit(-1);
-        }
+//显示当前登录用户的基本信息
+void showAccountInfo() {
+	//1.显示当前登录用户信息
+	printf("=======================login user========================\n");
+	printf("current login uid = %d, username = %s.\n", userInfo_g.getId(), userInfo_g.getName().c_str());
 
-        //2.数据反序列化与解析
-        json js = json::parse(buff);
-        int msgId = js["msgId"].get<int>();
-        if (msgId == ONE_CHAT_MSG) {
-            /* 客户端收到好友的单聊消息 */
-            int fid = js["from"].get<int>();
-            string time = js["time"];
-            string username = js["username"];
-            string message = js["msg"];
-
-			printf("<%s %d %s> : %s\n", time.c_str(), fid, username.c_str(), message.c_str());
-        } else if (msgId == GROUP_CHAT_MSG) {
-			/* 客户单收到群聊消息 */
-			int gid = js["gid"].get<int>();
-			int uid = js["uid"].get<int>();
-			string username = js["username"];
-			string message = js["msg"];
-            string time = js["time"];
-			printf("<Group:%d><%s %d %s> : %s\n", gid, time.c_str(), uid, username.c_str(), message.c_str());
+	//2.显示当前登录用户的好友列表
+	printf("=======================friend list========================\n");
+	if (!friendList_g.empty()) {
+		for (User user : friendList_g) {
+			printf("uid:%d\tusername:%s\tstate:%s\n", user.getId(), user.getName().c_str(), user.getState().c_str());
 		}
-    }
+	}
+
+	//3.显示当前登录用户的群组列表
+	printf("=======================group list========================\n");
+	if (!groupList_g.empty()) {
+		for (Group group : groupList_g) {
+			printf("gid:%d\tgroupname:%s\tgroupdesc:%s\n", group.getId(), group.getName().c_str(), group.getDesc().c_str());
+			for (GroupUser groupuser : group.getGroupUsers()) {
+				printf("  uid:%d\tusername:%s\tgrouprole:%s\tstate:%s\n", 
+					groupuser.getId(), 
+					groupuser.getName().c_str(), 
+					groupuser.getRole().c_str(), 
+					groupuser.getState().c_str());
+			}
+		}
+	}
 }
 
-//更新本地文件信息
+
+//主聊天页面程序
+void mainMenu(int clientfd) {
+	help();
+
+	char buff[1024] = {0};
+	while (isMainMenuRunning_g) {
+		//1.输入commandbuff
+		cin.getline(buff, 1024);
+		string commandbuff(buff);//用buff构造一个string名为commandbuff
+		string command;
+
+		//2.commandbuff解析
+		int idx = commandbuff.find(":");
+		if (idx == -1) command = commandbuff;
+		else command = commandbuff.substr(0, idx);
+
+		//3.判断命令有效性
+		auto it = commandHandlerMap.find(command);
+		if (it == commandHandlerMap.end()) {
+			/* 无效命令 */
+			cerr << "invalid command, please input command follow the instructions." << endl;
+			continue;
+		} else {
+			/* 有效命令 调用相应命令的事件处理回调 mainMenu对修改封闭 添加新功能不需要修改该函数 */
+			it->second(clientfd, commandbuff.substr(idx + 1, commandbuff.size() - idx));
+		}
+	}
+}
+
+
+//更新本地文件中 当前账户存储的信息
 void accountRefresh(json &response) {
 	//cout << response << endl;
 	memset(&userInfo_g, 0, sizeof(userInfo_g));
@@ -115,65 +143,3 @@ void accountRefresh(json &response) {
 		}
 	}
 }
-
-
-//显示当前登录用户的基本信息
-void showAccountInfo() {
-	//1.显示当前登录用户信息
-	printf("=======================login user========================\n");
-	printf("current login uid = %d, username = %s.\n", userInfo_g.getId(), userInfo_g.getName().c_str());
-
-	//2.显示当前登录用户的好友列表
-	printf("=======================friend list========================\n");
-	if (!friendList_g.empty()) {
-		for (User user : friendList_g) {
-			printf("uid:%d\tusername:%s\tstate:%s\n", user.getId(), user.getName().c_str(), user.getState().c_str());
-		}
-	}
-
-	//3.显示当前登录用户的群组列表
-	printf("=======================group list========================\n");
-	if (!groupList_g.empty()) {
-		for (Group group : groupList_g) {
-			printf("gid:%d\tgroupname:%s\tgroupdesc:%s\n", group.getId(), group.getName().c_str(), group.getDesc().c_str());
-			for (GroupUser groupuser : group.getGroupUsers()) {
-				printf("  uid:%d\tusername:%s\tgrouprole:%s\tstate:%s\n", 
-					groupuser.getId(), 
-					groupuser.getName().c_str(), 
-					groupuser.getRole().c_str(), 
-					groupuser.getState().c_str());
-			}
-		}
-	}
-}
-
-
-//主聊天页面程序
-void mainMenu(int clientfd) {
-	help();
-
-	char buff[1024] = {0};
-	while (isMainMenuRunning) {
-		//1.输入commandbuff
-		cin.getline(buff, 1024);
-		string commandbuff(buff);//用buff构造一个string名为commandbuff
-		string command;
-
-		//2.commandbuff解析
-		int idx = commandbuff.find(":");
-		if (idx == -1) command = commandbuff;
-		else command = commandbuff.substr(0, idx);
-
-		//3.判断命令有效性
-		auto it = commandHandlerMap.find(command);
-		if (it == commandHandlerMap.end()) {
-			/* 无效命令 */
-			cerr << "invalid command, please input command follow the instructions." << endl;
-			continue;
-		} else {
-			/* 有效命令 调用相应命令的事件处理回调 mainMenu对修改封闭 添加新功能不需要修改该函数 */
-			it->second(clientfd, commandbuff.substr(idx + 1, commandbuff.size() - idx));
-		}
-	}
-}
-
