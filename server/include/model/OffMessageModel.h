@@ -22,5 +22,4 @@ public:
     vector<string> query(int uid);
 };
 
-
 #endif // !_USERMODEL_H

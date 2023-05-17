@@ -34,10 +34,7 @@ ChatServer::ChatServer(EventLoop *loop, const InetAddress &listenAddr, const str
     _server.setMessageCallback(std::bind(&ChatServer::onMessage, this, _1, _2, _3));
 }
 
-/**
- * @brief 开启事件循环
- * 
- */
+//开启事件循环
 void ChatServer::start() {
     _server.start();
 }
