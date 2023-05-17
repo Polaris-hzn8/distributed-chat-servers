@@ -20,6 +20,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <semaphore.h>
+#include <atomic>//C++11原子类型 
+
 #include "json.hpp"
 
 using namespace std;

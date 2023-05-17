@@ -91,18 +91,6 @@ void refresh(int clientfd, string str) {
     string request = js.dump();
     int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
     if (len == -1) cerr << "send refresh request falied!~" << request << endl;
-
-    //2.接受客户端发送的response
-    /* 接受json response 数据 */
-    char buff[1024] = {0};
-    if ((recv(clientfd, buff, 1024, 0)) == -1) cerr << "recv refresh response error!~" << request << endl;
-    else {
-        json response = json::parse(buff);
-        accountRefresh(response);
-        showAccountInfo();
-        return;
-    }
-    cout << "account refresh error please check your network." << endl;
 }
 
 //<usage> createGroup:groupname:groupdesc
@@ -177,7 +165,7 @@ void logout(int clientfd, string) {
 
     int len = send(clientfd, request.c_str(), strlen(request.c_str()), 0);
     if (len == -1) cerr << "send logout msg falied!~" << request << endl;
-    else isMainMenuRunning = false;
+    else isMainMenuRunning_g = false;
 }
 
 

@@ -13,17 +13,13 @@
 //获取系统时间
 string getCurrentTime();
 
-//消息接收线程
-void readTaskHandler(int clientfd);
+//显示当前登录用户的基本信息
+void showAccountInfo();
 
 //主聊天页面程序
 void mainMenu(int clientfd);
 
 //刷新本地文件
 void accountRefresh(json &response);
-
-//显示当前登录用户的基本信息
-void showAccountInfo();
-
 
 #endif

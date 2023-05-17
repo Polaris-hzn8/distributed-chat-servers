@@ -23,25 +23,29 @@ bool Redis::connect() {
         LOG_INFO << "connect redis failed : _publish_context";
         return false;
     }
+    LOG_INFO << "[to redis] connect redis-server success! _publish_context";
+
     //2.负责subscribe订阅通道的上下文连接
     _subscribe_context = redisConnect(redisip, redisport);
     if (_subscribe_context == nullptr) {
         LOG_INFO << "connect redis failed : _subscribe_context";
         return false;
     }
+    LOG_INFO << "[to redis] connect redis-server success! _subscribe_context";
 
     //3.创建单独的线程 在该线程中监听通道上的事件 有消息就给业务层进行上报
     // [&]() { observer_channel_message(); };
     thread thread_t( [&]() { observer_channel_message(); } );
     //设置分离线程 防止线程被join 线程执行完成内核中PCB资源可能会泄露 设置成分离线程 线程运行结束PCB自动回收
     thread_t.detach();//默认情况下线程都可以被join，detach可以让其不可join
+    LOG_INFO << "[to redis] creat detached thread to observer channel message success!~";
     
-    LOG_INFO << "connect redis-server success!";
     return true;
 }
 
 //向redis指定的通道channel发布消息
 bool Redis::publish(int channel, string message) {
+    LOG_INFO << "[to redis] publish msg to redis-server in channel:" << channel;
     //发布消息
     redisReply *reply = (redisReply *)redisCommand(_publish_context, "PUBLISH %d %s", channel, message.c_str());
     if (reply == nullptr) {
@@ -66,6 +70,7 @@ bool Redis::publish(int channel, string message) {
 
 //向redis指定的通道subscribe订阅消息
 bool Redis::subscribe(int channel) {
+    LOG_INFO << "[to redis] subscribe redis mq channel:" << channel;
     //订阅消息 只订阅通道 不接受通道的消息 通道消息的接受专门会在observser_channel_message函数中的独立线程中进行
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源
     if (redisAppendCommand((this->_subscribe_context), "SUBSCRIBE %d", channel) == REDIS_ERR) {
@@ -88,6 +93,7 @@ bool Redis::subscribe(int channel) {
 
 //向redis指定的通道unsubscribe取消订阅消息
 bool Redis::unsubscribe(int channel) {
+    LOG_INFO << "[to redis] unsubscribe redis mq channel" << channel;
     //取消订阅消息
     //取消订阅消息 只取消订阅通道 不接受通道的消息
     //只负责发送命令 不阻塞接受redis server的响应消息 否则和notifyMsg线程抢占响应资源
@@ -109,16 +115,11 @@ bool Redis::unsubscribe(int channel) {
     return true;
 }
 
-//初始化向业务层上报通道消息的回调对象
-void Redis::init_notify_handler(function<void(int, string)> func) {
-    this->_notify_message_handler = func;//注册回调
-}
-
-//在独立线程中接收订阅通道中的消息
+//在独立线程中 监听订阅通道中的消息 如果有消息则将通道号与消息作为参数 传递给业务进行上报（通过调用 init_notify_handler 的方式）
 void Redis::observer_channel_message() {
     redisReply *reply = nullptr;
-    /* 在 _subscribe_context上以循环阻塞的方式 等待上下文是否有消息发生 */
-    while (redisGetReply(this->_subscribe_context, (void **)&reply)) {
+    /* 在 _subscribe_context上以循环阻塞的方式 等待上下文是否有消息发生 将创建的线程循环阻塞在这里 */
+    while (redisGetReply(this->_subscribe_context, (void **)&reply) == REDIS_OK) {
         /* 通道上如果有消息依次会返回三个数据 相当于写在了element数组中 下标分别是 0 1 2 */
         /* 
            1) message 
@@ -128,14 +129,20 @@ void Redis::observer_channel_message() {
            element[2] = helloworld
          */
         if (reply != nullptr && reply->element[2] != nullptr && reply->element[2]->str != nullptr) {
-            //给业务层上报通道上发生的消息 参数为通道号channel_id 与 通道消息message
+            //给业务层上报通道上发生的消息 作用为传递参数 通道号channel_id 与 通道消息message
             _notify_message_handler(atoi(reply->element[1]->str), reply->element[2]->str);
         }
         freeReplyObject(reply);
     }
-    LOG_INFO << ">>> observer_channerl_message quit";
+    LOG_INFO << "[to redis] observer_channerl_message quit";
 }
 
+
+//初始化向业务层上报通道消息的回调对象
+void Redis::set_notify_message_handler(function<void(int, string)> func) {
+    this->_notify_message_handler = func;//设置私有成员函数 赋值 调用回调函数
+    LOG_INFO << "[to redis] new msg happened in subscribe channel, reset _notify_message_handler success!";
+}
 
 
 
