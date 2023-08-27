@@ -3,7 +3,7 @@
 
 ### 一、主要技术点：
 
-Jason开发库、boost + muduo网络库、redis环境、mysql环境
+Jason开发库、muduo网络库、redis环境、mysql环境
 
 使用muduo网络库，将网络IO代码与业务代码分离，只需要关注业务代码接口（用户的断开与连接、用户的可读写事件）
 
@@ -94,8 +94,6 @@ Jason开发库、boost + muduo网络库、redis环境、mysql环境
 | -------- | ------------ | ----------------------------- | -------- |
 | userid   | INT          | 用户id                        | NOT NULL |
 | message  | VARCHAR(500) | 离线消息（内容为 Json字符串） | NOT NULL |
-
-
 
 ### 五、运行
 
